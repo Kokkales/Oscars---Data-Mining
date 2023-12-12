@@ -7,16 +7,10 @@ from sklearn.preprocessing import MultiLabelBinarizer
 from textblob import Word
 from imdb import IMDb
 from openpyxl import load_workbook, Workbook
-
-# def columnFormat(file):
-
-#   # Convert all values in each column to lowercase
-#   file = file.apply(lambda col: col.astype(str).str.lower())
-#   # Save the modified DataFrame back to Excel
-#   file.to_excel('modified.xlsx', index=False)
-#   print(f"Format file: {file}")
-#   return file
-
+class colors:
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    END = '\033[0m'
 
 def uniqueGenres(file):
 
@@ -69,24 +63,24 @@ def uniqueGenres(file):
 
 TYPES=['adaptation','screenplay','original','based on a true story','sequel','remake']
 def oneHotEncoding(file):
-   print(file.shape)
-   # SCRIPT TYPE
-   print(TYPES)
+  print(file.shape)
+  # SCRIPT TYPE
+  # print(TYPES)
   #  for type in TYPES:
   #     # TODO fix the split method
   #     file[type] = file['script type'].apply(lambda )
-   segment_text = lambda text, types: \
+  segment_text = lambda text, types: \
     (lambda r_text, res: res if not r_text else r_text[1:].strip() and segment_text(r_text[1:].strip(), types) if not any(r_text.startswith(t) for t in sorted(types, key=len, reverse=True)) else segment_text(r_text[len([t for t in sorted(types, key=len, reverse=True) if r_text.startswith(t)][0]):].strip(), types))(text.strip(), [])
-   for t in TYPES:
+  for t in TYPES:
     file[t] = file['script type'].apply(lambda x: 1 if t in segment_text(x, TYPES) else 0)
 
-   file=dropUseless(file,['script type'])
+  file=dropUseless(file,['script type'])
 
 
   # GENRE
-   genres=set()
+  genres=set()
 
-   for filmGenres in file['genre']:
+  for filmGenres in file['genre']:
       corrected_genres = []
       for genre in filmGenres.split():
           corrected_genre = str(Word(genre).correct().lower())
@@ -111,50 +105,50 @@ def oneHotEncoding(file):
       genres.update(final_genres)
       # genres.update(corrected_genres.split())
 
-   print(genres)
-   for genre in genres:
+  # print(genres)
+  for genre in genres:
       file[genre] = file['genre'].apply(lambda x: 1 if genre in x.split() else 0)
 
-   file=dropUseless(file,['genre'])
+  file=dropUseless(file,['genre'])
 
-   # DATE
-   file['release date (us)'] = pd.to_datetime(file['release date (us)'], format='mixed')
-   dateColumns = pd.DataFrame({
+  # DATE
+  file['release date (us)'] = pd.to_datetime(file['release date (us)'], format='mixed')
+  dateColumns = pd.DataFrame({
     'Month': file['release date (us)'].dt.month.astype(str),
     'Day': file['release date (us)'].dt.day.astype(str),
     'Year': file['release date (us)'].dt.year.astype(str)
     })
-   encoded_dates = pd.get_dummies(dateColumns).astype(int)
-   file = pd.concat([file, encoded_dates], axis=1)
-   file=dropUseless(file,['release date (us)'])
+  encoded_dates = pd.get_dummies(dateColumns).astype(int)
+  file = pd.concat([file, encoded_dates], axis=1)
+  file=dropUseless(file,['release date (us)'])
   #  print(file)
-   print(file.shape)
+  print(file.shape)
   #  print(file['release date (us)'])
-   return file
+  return file
 
-PRECENTAGES=['budget recovered','budget recovered opening weekend']
 def precentagesToDecimal(file):
+  PRECENTAGES=['budget recovered','budget recovered opening weekend']
   #  Convert each value of the df that is ending with the '%' to decimal (divide by 100)
   file = file.map(lambda val: float(val.rstrip('%')) / 100 if isinstance(val, str) and val.endswith('%') else val)
-  print(f"PRECENTAGES HAS BEEN SUCCESFULLY CONVERTED!")
+  print(f"{colors.GREEN}PRECENTAGES HAS BEEN SUCCESFULLY CONVERTED!{colors.END}")
   # print(file[' Budget recovered'])
   # file.to_excel("clone.xlsx")
   return file
 
 def NumericalToNominal(file):
-   print(f"Numerical to Nominal")
-   return file
+  print(f"Numerical to Nominal")
+  return file
 
 def dropUseless(file,uselessColumns):
-   file.drop(uselessColumns,axis=1,inplace=True) # deleting useless data from the excel
-   print("USELESS COLUMNS HAS BEEN SUCCESFULLY DELETED!")
-   return file
+  file.drop(uselessColumns,axis=1,inplace=True) # deleting useless data from the excel
+  print(f"{colors.GREEN}USELESS COLUMNS HAS BEEN SUCCESFULLY DELETED!{colors.END}")
+  return file
 
 
 def deleteDuplicate(file):
   print(f'The dataset contains {file.duplicated().sum()} duplicate rows that need to be removed.')
   file.drop_duplicates(inplace=True)
-  print(f"DUPLICATE ROWS HAVE BEEN SUCCESFULLY DELETED!")
+  print(f"{colors.GREEN}DUPLICATE ROWS HAVE BEEN SUCCESFULLY DELETED!{colors.END}")
   return file
 
 def externalKnowledge(file):
@@ -181,21 +175,21 @@ def externalKnowledge(file):
     except:
       file.at[i-2, 'imdb rating'] = np.nan
       continue
-    print(file.head(5))
+    # print(file.head(5))
     i=i+1
-  print(f'EXTERNAL KNOWLEDGE \'IMDb\' HAS BEEN SUCCESFULLY ADDED')
+  print(f'{colors.GREEN}EXTERNAL KNOWLEDGE \'IMDb\' HAS BEEN SUCCESFULLY ADDED{colors.END}')
   # file.to_excel("clone.xlsx")
   return file
 
 
-STRING_COL=['script type','genre','oscar winners']
 def stringMissingValues(file):
-   for index, row in file.iterrows():
+  STRING_COL=['script type','genre','oscar winners']
+  for index, row in file.iterrows():
       # oscar winners
       if (pd.isnull(row['oscar winners'])):
-         file.loc[index, 'oscar winners'] = 0
+        file.loc[index, 'oscar winners'] = 0
       else:
-         file.loc[index, 'oscar winners'] = 1
+        file.loc[index, 'oscar winners'] = 1
       # Get the year of the film
       year = row['year']
 
@@ -220,65 +214,57 @@ def stringMissingValues(file):
             file['genre']=file['genre'].fillna(method='ffill')
             # file.at[index, 'genre'] = np.nan
       if pd.isnull(row['script type']):
-         file['script type']=file['script type'].fillna(method='ffill')
-   file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
-   file['script type'] = file['script type'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
+        file['script type']=file['script type'].fillna(method='ffill')
+  file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
+  file['script type'] = file['script type'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
 
-   print("MISSING VALUES HAS BEEN SUCCESFULLY RESTORED! (other)")
+  print(f"{colors.GREEN}OTHER MISSING VALUES HAS BEEN SUCCESFULLY RESTORED!{colors.END}")
 
-   return file
+  return file
 
-
-COMMA_COL=['average critics','average audience','opening weekend','foreign gross','worldwide gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating']
 def numericalMissingValues(file):
+  COMMA_COL=['average critics','average audience','opening weekend','foreign gross','worldwide gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating']
   file[COMMA_COL] = file[COMMA_COL].replace(',', '', regex=True)
   for element in COMMA_COL:
       for index, row in file.iterrows():
         year = row['year']
         mean = file[file['year'] == year][element].mean()
-        file[element] = pd.to_numeric(df[element], errors='coerce')
+        file[element] = pd.to_numeric(file[element], errors='coerce')
         if pd.isna(row[element]):
           file.loc[index, element] = mean
-  print(f"MISSING VALUES HAS BEEN SUCCESFULLY RESTORED!")
+  print(f"{colors.GREEN}NUMERIC MISSING VALUES HAS BEEN SUCCESFULLY RESTORED!{colors.END}")
   return file
+class DataPreprocessor():
 
-# NUMERICAL=['average critics','average audience','opening weekend','domsestic gross','foreign gross','worldwide gross','budget ($million)','imdb rating']
-# def formatNumerical(file):
-#     for col in NUMERICAL:
-#         # Replace commas with dots in the specified columns
-#         if col in file.columns:
-#             file[col] = file[col].str.replace(',', '.')
-#             file[col] = pd.to_numeric(file[col], errors='coerce')  # Convert values to decimal
-#         else:
-#            raise ValueError(f"Column with the name {col} doesn;t exist.")
-#     print("NUMBERS HAVE BEEN SUCESFULLY FORMATED!")
-#     return file
+  def __init__(self, fileToProcess, cloneProcessedFile):
+        self.fileToProcess = fileToProcess
+        self.cloneProcessedFile = cloneProcessedFile
+        # You can perform any initialization here
 
+  # DATA PREPROCESSING
+  def executePreprocess(self):
+    df=pd.read_excel(self.fileToProcess, sheet_name = 'Sheet1',na_values=['-'])
+    # print(df.head())
+    df.columns = df.columns.str.lower().str.replace(r'\s+', ' ', regex=True)
+    df.columns = df.columns.str.strip()
+    df.to_excel(self.fileToProcess, index=False)
+    # print(df.shape)
 
+    # 3. POINT USELESS COLUMNS
+    USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','of gross earned abroad','distributor','imdb vs rt disparity','oscar detail']
+    df=dropUseless(df,USELESS_COL) # 4. DELETE USELESS COLUMNS
+    # externalKnowledge(df) # 5. RETRIEVE EXTERNAL KNOWLEDGE, ADDITIONAL DATA
+    df=precentagesToDecimal(df)# 6. CONVERT PRECENTAGES CELLS TO DECIMAL
+    df=numericalMissingValues(df)
+    df=stringMissingValues(df)
+    df=oneHotEncoding(df)
 
-# DATA PREPROCESSING
-df=pd.read_excel('Book.xlsx', sheet_name = 'Sheet1',na_values=['-'])
-print(df.head())
-df.columns = df.columns.str.lower().str.replace(r'\s+', ' ', regex=True)
-df.columns = df.columns.str.strip()
-df.to_excel('Book.xlsx', index=False)
-# print(df.shape)
-
-# 3. POINT USELESS COLUMNS
-USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','of gross earned abroad','distributor','imdb vs rt disparity','oscar detail']
-df=dropUseless(df,USELESS_COL) # 4. DELETE USELESS COLUMNS
-# externalKnowledge(df) # 5. RETRIEVE EXTERNAL KNOWLEDGE, ADDITIONAL DATA
-df=precentagesToDecimal(df)# 6. CONVERT PRECENTAGES CELLS TO DECIMAL
-df=numericalMissingValues(df)
-df=stringMissingValues(df)
-# df=formatNumerical(df)
-# TODO8. CONVERT NUMERICAL TO NOMINAL VALUES
-df=oneHotEncoding(df)
-
-# df=deleteDuplicate(df)  # 9. CHECK FOR DUPLICATE ROWS
-df=dropUseless(df,['film','year']) # 4. DELETE USELESS COLUMNS
-print(df.head(5))
-df.to_excel("datesThree.xlsx") #10. Convert pandas updated dataset to a new excel with the final data
-missing_data = pd.read_excel('datesThree.xlsx').isnull().sum()
-# print(f"# of missing data: {missing_data}")
-print(f"--------------------------FINISHED-------------------------")
+    # df=deleteDuplicate(df)  # 9. CHECK FOR DUPLICATE ROWS
+    df=dropUseless(df,['film','year']) # 4. DELETE USELESS COLUMNS
+    # print(df.head(5))
+    print(df.shape)
+    df.to_excel(self.cloneProcessedFile) #10. Convert pandas updated dataset to a new excel with the final data
+    missing_data = pd.read_excel(self.cloneProcessedFile).isnull().sum()
+    # print(f"# of missing data: {missing_data}")
+    print(f"--------------------------FINISHED-------------------------")
+    return df
