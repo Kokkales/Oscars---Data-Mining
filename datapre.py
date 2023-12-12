@@ -132,7 +132,7 @@ def oneHotEncoding(file):
   #  print(file['release date (us)'])
    return file
 
-PRECENTAGES=['of gross earned abroad','budget recovered','budget recovered opening weekend']
+PRECENTAGES=['budget recovered','budget recovered opening weekend']
 def precentagesToDecimal(file):
   #  Convert each value of the df that is ending with the '%' to decimal (divide by 100)
   file = file.map(lambda val: float(val.rstrip('%')) / 100 if isinstance(val, str) and val.endswith('%') else val)
@@ -229,7 +229,7 @@ def stringMissingValues(file):
    return file
 
 
-COMMA_COL=['average critics','average audience','opening weekend','domestic gross','foreign gross','worldwide gross','of gross earned abroad','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating']
+COMMA_COL=['average critics','average audience','opening weekend','foreign gross','worldwide gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating']
 def numericalMissingValues(file):
   file[COMMA_COL] = file[COMMA_COL].replace(',', '', regex=True)
   for element in COMMA_COL:
@@ -265,7 +265,7 @@ df.to_excel('Book.xlsx', index=False)
 # print(df.shape)
 
 # 3. POINT USELESS COLUMNS
-USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','distributor','imdb vs rt disparity','oscar detail']
+USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','of gross earned abroad','distributor','imdb vs rt disparity','oscar detail']
 df=dropUseless(df,USELESS_COL) # 4. DELETE USELESS COLUMNS
 # externalKnowledge(df) # 5. RETRIEVE EXTERNAL KNOWLEDGE, ADDITIONAL DATA
 df=precentagesToDecimal(df)# 6. CONVERT PRECENTAGES CELLS TO DECIMAL
@@ -280,5 +280,5 @@ df=dropUseless(df,['film','year']) # 4. DELETE USELESS COLUMNS
 print(df.head(5))
 df.to_excel("datesThree.xlsx") #10. Convert pandas updated dataset to a new excel with the final data
 missing_data = pd.read_excel('datesThree.xlsx').isnull().sum()
-print(f"# of missing data: {missing_data}")
+# print(f"# of missing data: {missing_data}")
 print(f"--------------------------FINISHED-------------------------")
