@@ -223,7 +223,7 @@ def stringMissingValues(file):
   return file
 
 def numericalMissingValues(file):
-  COMMA_COL=['average critics','average audience','opening weekend','foreign gross','worldwide gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating']
+  COMMA_COL=['average critics','average audience','opening weekend','foreign gross','domestic gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating']
   file[COMMA_COL] = file[COMMA_COL].replace(',', '', regex=True)
   for element in COMMA_COL:
       for index, row in file.iterrows():
@@ -251,7 +251,7 @@ class DataPreprocessor():
     # print(df.shape)
 
     # 3. POINT USELESS COLUMNS
-    USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','of gross earned abroad','distributor','imdb vs rt disparity','oscar detail']
+    USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','worldwide gross','worldwide gross ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','of gross earned abroad','distributor','imdb vs rt disparity','oscar detail']
     df=dropUseless(df,USELESS_COL) # 4. DELETE USELESS COLUMNS
     # externalKnowledge(df) # 5. RETRIEVE EXTERNAL KNOWLEDGE, ADDITIONAL DATA
     df=precentagesToDecimal(df)# 6. CONVERT PRECENTAGES CELLS TO DECIMAL
