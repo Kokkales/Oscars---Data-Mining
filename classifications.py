@@ -58,19 +58,19 @@ class Classificationer():
 
 
   # DT
-  def executeDtClassification(self):
+  def executeDtrClassification(self):
     model=DecisionTreeRegressor()
     model.fit(self.X_train,self.y_train)
     predictions = model.predict(self.X_test)
-    with warnings.catch_warnings():
-      warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+    # with warnings.catch_warnings():
+    #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
     print(confusion_matrix(self.y_test,predictions))
     print('\n')
     print(classification_report(self.y_test,predictions))
-    return 'Decision Tree Regression working.'
+    return 'Decision Tree Regressor working.'
 
   # RANDOM FOREST
-  warnings.filterwarnings('ignore')
+  # warnings.filterwarnings('ignore')
   def executeRfClassification(self):
     model=RandomForestClassifier(n_estimators=10, max_depth=None,min_samples_split=2, random_state=0)
     model.fit(self.X_train,self.y_train)
@@ -125,8 +125,8 @@ class Classificationer():
     model=SVC()
     model.fit(self.X_train,self.y_train)
     predictions = model.predict(self.X_test)
-    with warnings.catch_warnings():
-      warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+    # with warnings.catch_warnings():
+    #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
     # sklearn.metrics.f1_score(self.y_test, predictions, average='weighted', labels=np.unique(predictions))
     print(confusion_matrix(self.y_test,predictions))
     print('\n')
