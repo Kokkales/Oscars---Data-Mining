@@ -29,31 +29,9 @@ class Classificationer():
     model=DecisionTreeClassifier(criterion='entropy',min_samples_split=80)
     model.fit(self.X_train,self.y_train)
     predictions = model.predict(self.X_test)
-    # with warnings.catch_warnings():
-    #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-    #   precision = precision_score(self.y_test, predictions, average='macro', zero_division=1)
-    #   f1 = f1_score(self.y_test, predictions, average='macro', zero_division=1)
-    #   recall = recall_score(self.y_test, predictions, average='macro', zero_division=1)
-    # print(f'Precision: {precision}')
-    # print(f'F1-Score: {f1}')
-    # print(f'Recall Score: {recall}')
-    # sklearn.metrics.f1_score(self.y_test, predictions, average='weighted', labels=np.unique(predictions))
     print(confusion_matrix(self.y_test,predictions))
     print('\n')
-    print(classification_report(self.y_test,predictions))
-    # plt.scatter(self.X_test['average critics'],self.X_test['average audience'],c=self.y_test)
-    # plt.xlabel('Average Critics')
-    # plt.ylabel('Average Audience')
-    # plt.title('Scatter Plot with Oscar Winners')
-    # plt.show()
-    # plt.close()
-    # plt.scatter(self.X_test['average critics'],self.X_test['average audience'],c=predictions)
-    # plt.xlabel('Average Critics')
-    # plt.ylabel('Average Audience')
-    # plt.title('Scatter Plot with Oscar Winners')
-    # plt.show()
-    # plt.close()
-
+    print(classification_report(self.y_test,predictions,zero_division=1))
     return 'Decision tree classifier working.'
 
 
