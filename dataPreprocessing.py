@@ -13,7 +13,7 @@ from openpyxl import load_workbook, Workbook
 
 USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','worldwide gross','worldwide gross ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','of gross earned abroad','distributor','imdb vs rt disparity','oscar detail']
 COMMA_COL=['average critics','average audience','opening weekend','foreign gross','domestic gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating']
-STRING_COL=['script type','genre','oscar winners']
+STRING_COL=['script type','genre','oscar winners','release date (us)']
 # PRECENTAGES=['budget recovered','budget recovered opening weekend']
 TYPES=['adaptation','screenplay','original','based on a true story','sequel','remake']
 
@@ -29,43 +29,39 @@ def oneHotEncoding(file):
   #  for type in TYPES:
   #     # TODO fix the split method
   #     file[type] = file['script type'].apply(lambda )
-  segment_text = lambda text, types: \
-    (lambda r_text, res: res if not r_text else r_text[1:].strip() and segment_text(r_text[1:].strip(), types) if not any(r_text.startswith(t) for t in sorted(types, key=len, reverse=True)) else segment_text(r_text[len([t for t in sorted(types, key=len, reverse=True) if r_text.startswith(t)][0]):].strip(), types))(text.strip(), [])
   for t in TYPES:
-    file[t] = file['script type'].apply(lambda x: 1 if t in segment_text(x, TYPES) else 0)
+    file[t] = file['script type'].apply(
+        lambda x, t=t: 1 if any(x.startswith(s) for s in sorted(TYPES, key=len, reverse=True)) else 0
+    )
 
   file=dropUseless(file,['script type'])
 
 
   # GENRE
+  file['genre']=file['genre'].str.lower()
   genres=set()
-
-  for filmGenres in file['genre']:
-      corrected_genres = []
-      for genre in filmGenres.split():
-          corrected_genre = str(Word(genre).correct().lower())
-          corrected_genres.append(corrected_genre)
-      # TODO FIX IT THE SPELLING THREE LETTERS SIMILARITY
-      final_genres = []
-      for genre in corrected_genres:
-        if len(final_genres) == 0:
-            final_genres.append(genre)
-        else:
-            last_genre = final_genres[-1]
-            if len(set(genre) - set(last_genre)) <= 1:
-                consecutive_count = 0
-                for i in range(len(genre) - 2):
-                    if genre[i] == genre[i + 1] == genre[i + 2]:
-                        consecutive_count += 1
-                if consecutive_count < 3:
-                    final_genres.append(genre)
-            else:
-                final_genres.append(genre)
-
-      genres.update(final_genres)
-      # genres.update(corrected_genres.split())
-
+  correctGenre=[]
+  for item in file['genre']:
+    for word in item.split():
+      # correctedWords=[]
+      correctedWord=str(Word(word).correct().lower())
+      # print(correctedWord)
+      correctGenre.append(correctedWord)
+  genres.update(correctGenre)
+  # print("c:",genres)
+  words_to_remove = set()
+  for word1 in genres:
+        for word2 in genres:
+            if word1 != word2 and len(word1) >3 and len(word2) > 3:
+                common_substrings = set([word1[i:i+5] for i in range(len(word1)-4) if word1[i:i+5] in word2])
+                if common_substrings:
+                    shorter_word = word1 if len(word1) < len(word2) else word2
+                    words_to_remove.add(shorter_word)
+  genres.difference_update(words_to_remove)
   # print(genres)
+  file['genre'] = file['genre'].apply(lambda cell: ' '.join(
+    [next((word_set_word for word_set_word in genres if word_set_word[:3] == word[:3]), word) for word in cell.split()]
+))
   try:
     for genre in genres:
         file[genre] = file['genre'].apply(lambda x: 1 if genre in x.split() else 0)
@@ -74,15 +70,30 @@ def oneHotEncoding(file):
     raise RuntimeError(f'{colors.RED}A problem occured while one-hot encoding genres{colors.END}')
 
   # DATE
+  file['release date (us)'] = pd.to_datetime(file['release date (us)'],format='mixed')
+
+  # Extract month and day
+  file['release date (us)'] = file['release date (us)'].dt.strftime('%m').astype(int)
+  monthMapping = {
+    1: 'january',
+    2: 'february',
+    3: 'march',
+    4: 'april',
+    5: 'may',
+    6: 'june',
+    7: 'july',
+    8: 'august',
+    9: 'september',
+    10: 'october',
+    11: 'november',
+    12: 'december'
+}
+
+# Nominalize the 'release date (us)' column
   try:
-    file['release date (us)'] = pd.to_datetime(file['release date (us)'], format='mixed')
-    dateColumns = pd.DataFrame({
-      'Month': file['release date (us)'].dt.month.astype(str),
-      'Day': file['release date (us)'].dt.day.astype(str),
-      'Year': file['release date (us)'].dt.year.astype(str)
-      })
-    encoded_dates = pd.get_dummies(dateColumns).astype(int)
-    file = pd.concat([file, encoded_dates], axis=1)
+    file['release date (us)'] = file['release date (us)'].map(monthMapping)
+    one_hot_encoded = pd.get_dummies(file['release date (us)'], prefix='').astype(int)
+    file = pd.concat([file, one_hot_encoded], axis=1)
     file=dropUseless(file,['release date (us)'])
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while one-hot encoding dates{colors.END}')
@@ -106,10 +117,15 @@ def NumericalToNominal(file):
 
 def dropUseless(file,uselessColumns):
   try:
+    for item in uselessColumns:
+      if item not in file.columns:
+        print("ïtem",item)
+        uselessColumns.remove(item)
+        continue
     if len(uselessColumns)!=0:
       file.drop(uselessColumns,axis=1,inplace=True) # deleting useless data from the excel
   except:
-    raise RuntimeError(f'{colors.RED}A problem occured while receiving external knowledge in string missing values{colors.END}')
+    raise RuntimeError(f'{colors.RED}A problem occured while dropping useless columns.{colors.END}')
   print(f"{colors.GREEN}USELESS COLUMNS HAS BEEN SUCCESFULLY DELETED!{colors.END}")
   return file
 
@@ -156,12 +172,18 @@ def externalKnowledge(file):
 
 def stringMissingValues(file):
   try:
+    for item in STRING_COL:
+      if item not in file.columns:
+        print("ïtem",item)
+        STRING_COL.remove(item)
+        continue
     for index, row in file.iterrows():
         # oscar winners
-        if (pd.isnull(row['oscar winners'])):
-          file.loc[index, 'oscar winners'] = 0
-        else:
-          file.loc[index, 'oscar winners'] = 1
+        if 'oscar winners' in file.columns:
+          if (pd.isnull(row['oscar winners'])):
+            file.loc[index, 'oscar winners'] = 0
+          else:
+            file.loc[index, 'oscar winners'] = 1
         # Genre
         # file['genre']=file['genre'].str.lower()
         try:
@@ -178,9 +200,11 @@ def stringMissingValues(file):
         except:
             raise RuntimeError(f'{colors.RED}A problem occured while receiving external knowledge in string missing values{colors.END}')
     file['genre']=file['genre'].ffill()
-    file['script type']=file['script type'].ffill()
     file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
-    file['script type'] = file['script type'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
+    file['script type']=file['script type'].ffill()
+    file['script type'] = file['script type'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip
+    ()
+    file['release date (us)']=file['release date (us)'].ffill()
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while processing string missing values{colors.END}')
 
@@ -268,6 +292,7 @@ class DataPreprocessor():
     return df
 
 if __name__=='__main__':
-  dp=DataPreprocessor("Book.xlsx","datesFour.xlsx")
+  dp=DataPreprocessor("./movies_test _anon_sample.xlsx","sample.xlsx")
+  # dp=DataPreprocessor("Book.xlsx","datesFour.xlsx")
   dataset=dp.executePreprocess()
   print(dataset.head())
