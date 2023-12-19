@@ -138,12 +138,13 @@ def dropUseless(file,uselessColumns):
   print(f"{colors.GREEN}USELESS COLUMNS HAS BEEN SUCCESFULLY DELETED!{colors.END}")
   return file
 
-
 def deleteDuplicate(file):
   try:
-    if(file.duplicated().sum()!=0):
+    if (file.duplicated().sum() != 0) or (not file[file.duplicated(subset=['film'])].empty):
+      print(f'The dataset contains {(file.duplicated(subset=["film"])).sum()} duplicate films that need to be removed.')
       print(f'The dataset contains {file.duplicated().sum()} duplicate rows that need to be removed.')
       file.drop_duplicates(inplace=True)
+      file = file.drop_duplicates(subset=['film'],keep='first')
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while deleting duplicates{colors.END}')
   print(f"{colors.GREEN}DUPLICATE ROWS HAVE BEEN SUCCESFULLY DELETED!{colors.END}")
@@ -166,6 +167,7 @@ def externalKnowledge(file):
       print(i," ",rating)
       if not rating:
         file.at[i-2, 'imdb rating'] = np.nan
+        continue
       else:
         file.at[i-2, 'imdb rating'] = rating
         file.at[i-2,'year']=year
@@ -289,7 +291,7 @@ class DataPreprocessor():
 
   # DATA PREPROCESSING
   def executePreprocess(self,type=None):
-    df=pd.read_excel(self.fileToProcess, sheet_name = 'Sheet1',na_values=['-'])
+    df=pd.read_excel(self.fileToProcess, sheet_name = 'Sheet1',na_values=['-','0'])
     df.columns = df.columns.str.lower().str.replace(r'\s+', ' ', regex=True)
     df.columns = df.columns.str.strip()
     df.to_excel(self.fileToProcess, index=False)
@@ -300,13 +302,13 @@ class DataPreprocessor():
     df=numericMissingValues(df) # RETRIEVE MISSING VALUES
     df=stringMissingValues(df) # RETRIEVE MISSING VALUES
     df=oneHotEncoding(df) # ONE HOT ENCODING
+    df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
     df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
     if type=='normalisation':
       df=normalization(df)
     elif type=='scaling':
       df=scaling(df)
     # df=scaling(df)
-    df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
     df.to_excel(self.cloneProcessedFile) # Convert pandas updated dataset to a new excel with the final data
     # missing_data = pd.read_excel(self.cloneProcessedFile).isnull().sum()
     # print(f"# of missing data: {missing_data}")
