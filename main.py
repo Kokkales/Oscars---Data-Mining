@@ -32,8 +32,8 @@ for i in range(20):
   X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.3)
   cl=Classificationer(X_train, X_test, y_train, y_test)
   # cl=Classificationer()
-  print(cl.excecuteDtcClassification())#0.96
-  # print(cl.executeDtrClassification()) #0.96
+  # print(cl.excecuteDtcClassification())#0.96
+  print(cl.executeDtrClassification()) #0.96
   # print(cl.executeRfClassification())# 0.98
   # print(cl.executeKnnClassification()) # 0.77
   # print(cl.executeGpClassification()) # 0.95

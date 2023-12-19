@@ -1,78 +1,37 @@
-from dataPreprocessing import DataPreprocessor
-from classifications import Classificationer
-import seaborn as sns
-import numpy as np
-import scipy as sc
-import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-import math
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-# Generic
-import pandas as pd
-import numpy as np
+# Assuming 'file' is your DataFrame
+file = pd.read_excel('./datesFour.xlsx', sheet_name='Sheet1')
 
-# Generate data sets
-from sklearn.datasets import make_blobs
+def separateData(ds):
+    target = ds['oscar winners']
+    features = ds.drop(columns=['oscar winners'])
+    return target, features
 
-# PCA
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
+# Separate target and features
+target, features = separateData(file)
 
-# Data Visualization
-import matplotlib.pyplot as plt
-import seaborn as sns
-import plotly.express as px
-
-def seperateData(ds):
-  target=ds['oscar winners']
-  col=[]
-  for feature in ds.columns:
-    if feature!='oscar winners':
-      col.append(feature)
-  data=ds[col]
-  return (target,data)
-
-
-# dp=DataPreprocessor("Book.xlsx","datesThree.xlsx")
-# dataset=dp.executePreprocess('normalization')#options: normalization, scaling
-dataset=pd.read_excel('./datesFour.xlsx', sheet_name = 'Sheet1')
-target,data=seperateData(dataset)
-
-# # Seprate train and test data
-X=data
-# y=LabelEncoder().fit_transform(target)
-y=target
-
+# Standardize the data
 scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
-
-X_standardized = (X - X.mean()) / X.std()
+scaled_features = scaler.fit_transform(features)
 
 # Apply PCA
 pca = PCA()
-X_pca = pca.fit_transform(X_standardized)
+principal_components = pca.fit_transform(scaled_features)
 
-# Explained variance ratio
+# Analyze explained variance
 explained_variance_ratio = pca.explained_variance_ratio_
+cumulative_variance_ratio = explained_variance_ratio.cumsum()
 
-# Cumulative explained variance
-cumulative_explained_variance = explained_variance_ratio.cumsum()
+# Determine the number of components to retain based on the explained variance threshold
+threshold_variance = 0.95
+num_components_to_retain = (cumulative_variance_ratio <= threshold_variance).sum()
 
-# Determine the number of components to keep (e.g., 95% of variance)
-n_components = (cumulative_explained_variance < 0.95).sum() + 1
+# Get the names of features with low importance
+low_importance_original_features = features.columns[-num_components_to_retain:]
 
-# Retain only the selected components
-X_reduced = X_pca[:, :n_components]
-print(X_reduced)
-
-# Visualize explained variance
-import matplotlib.pyplot as plt
-
-plt.plot(cumulative_explained_variance, marker='o')
-plt.xlabel('Number of Components')
-plt.ylabel('Cumulative Explained Variance')
-plt.show()
+# Print the names of features with low importance
+print("Features with Low Importance:")
+print(low_importance_original_features)

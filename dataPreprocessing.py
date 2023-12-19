@@ -11,14 +11,14 @@ from imdb import IMDb
 from openpyxl import load_workbook, Workbook
 
 
-USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','worldwide gross','worldwide gross ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','of gross earned abroad','distributor','imdb vs rt disparity']
-COMMA_COL=['average critics','average audience','opening weekend','foreign gross','domestic gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating']
-STRING_COL=['script type','genre','oscar winners','release date (us)']
-# PRECENTAGES=['budget recovered','budget recovered opening weekend']
+ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)',
+             'foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
+NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TYPES=['adaptation','original','based on a true story','sequel','remake']
 SCALING_COL=['average critics','average audience','opening weekend','domestic gross','foreign gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating'
 ]
-
+# USELESS_COL=['distributor','imdb vs rt disparity','prime genre']
+USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','of gross earned abroad','distributor','imdb vs rt disparity']
 class colors:
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -59,7 +59,7 @@ def oneHotEncoding(file):
           # print(correctedWord)
           correctGenre.append(correctedWord)
       genres.update(correctGenre)
-      # print("c:",genres)
+      print("c:",genres)
       words_to_remove = set()
       for word1 in genres:
             for word2 in genres:
@@ -73,6 +73,7 @@ def oneHotEncoding(file):
       file['genre'] = file['genre'].apply(lambda cell: ' '.join(
         [next((word_set_word for word_set_word in genres if word_set_word[:3] == word[:3]), word) for word in cell.split()]
     ))
+      print('Set:::',genres)
       for genre in genres:
           file[genre] = file['genre'].apply(lambda x: 1 if genre in x.split() else 0)
       file=dropUseless(file,['genre'])
@@ -112,17 +113,13 @@ def oneHotEncoding(file):
   print(f'{colors.GREEN}ONE HOT ENCODING HAS BEEN SUCESSFULLY COMPLETED!{colors.END}')
   return file
 
-def precentagesToDecimal(file):
-  try:
-    #  Convert each value of the df that is ending with the '%' to decimal (divide by 100)
-    file = file.map(lambda val: float(val.rstrip('%')) / 100 if isinstance(val, str) and val.endswith('%') else val)
-  except:
-    raise RuntimeError(f'{colors.RED}A problem occured while converting precentages to decimal.{colors.END}')
-  print(f"{colors.GREEN}PRECENTAGES HAS BEEN SUCCESFULLY CONVERTED!{colors.END}")
-  return file
-
-# def NumericalToNominal(file):
-#   print(f"Numerical to Nominal")
+# def precentagesToDecimal(file):
+#   try:
+#     #  Convert each value of the df that is ending with the '%' to decimal (divide by 100)
+#     file = file.map(lambda val: float(val.rstrip('%')) / 100 if isinstance(val, str) and val.endswith('%') else val)
+#   except:
+#     raise RuntimeError(f'{colors.RED}A problem occured while converting precentages to decimal.{colors.END}')
+#   print(f"{colors.GREEN}PRECENTAGES HAS BEEN SUCCESFULLY CONVERTED!{colors.END}")
 #   return file
 
 def dropUseless(file,uselessColumns):
@@ -150,7 +147,7 @@ def deleteDuplicate(file):
   print(f"{colors.GREEN}DUPLICATE ROWS HAVE BEEN SUCCESFULLY DELETED!{colors.END}")
   return file
 
-def externalKnowledge(file):
+def externalIMDb(file):
   ia = IMDb()
   i=2
   for movieTitle in file['film']:
@@ -177,76 +174,94 @@ def externalKnowledge(file):
     i=i+1
   print(f'{colors.GREEN}EXTERNAL KNOWLEDGE \'IMDb\' HAS BEEN SUCCESFULLY ADDED{colors.END}')
   # file.to_excel("clone.xlsx")
+  try:
+    for index,row in file.iterrows():
+      if pd.isna(row['genre']):
+        movies = ia.search_movie(row['film'])
+        if movies:
+            movie = ia.get_movie(movies[0].movieID)
+            genre=",".join(movie['genres']).lower()
+        else:
+            print("Movie not found.")
+            genre=np.nan
+        file.at[index, 'genre'] = genre
+  except:
+      raise RuntimeError(f'{colors.RED}A problem occured while receiving external knowledge in string missing values{colors.END}')
+  return file
+
+def externalGenre(file):
+  ia=IMDb()
+  try:
+    for index,row in file.iterrows():
+      if pd.isna(row['genre']):
+        movies = ia.search_movie(row['film'])
+        if movies:
+            movie = ia.get_movie(movies[0].movieID)
+            genre=",".join(movie['genres']).lower()
+        else:
+            print("Movie not found.")
+            genre=np.nan
+        file.at[index, 'genre'] = genre
+  except:
+      raise RuntimeError(f'{colors.RED}A problem occured while receiving external knowledge in string missing values{colors.END}')
   return file
 
 
 def stringMissingValues(file):
   try:
-    for item in STRING_COL:
+    for item in NO_TRAGET_STRINGS:
       if item not in file.columns:
-        # print("ïtem",item)
-        STRING_COL.remove(item)
+        NO_TRAGET_STRINGS.remove(item)
+        print(f"{item} column removed from the array because it doesn't exist in the dataset")
         continue
+      if len(ALL_NUMERIC)==0:
+        print(f'{colors.GREEN}NO STRING COLUMNS TO BE PROCESSED.SUCCESFULLY COMPLETED{colors.END}')
+        return file
+    file=externalGenre(file)
     for index, row in file.iterrows():
-        # oscar winners
         if 'oscar winners' in file.columns:
-          if (pd.isnull(row['oscar winners'])):
+          if (pd.isna(row['oscar winners'])):
             file.loc[index, 'oscar winners'] = 0
           else:
             file.loc[index, 'oscar winners'] = 1
-        try:
-          if pd.isnull(row['genre']):
-            ia=IMDb()
-            movies = ia.search_movie(row['film'])
-            if movies:
-                movie = ia.get_movie(movies[0].movieID)
-                genre=",".join(movie['genres']).lower()
-            else:
-                print("Movie not found.")
-                genre=np.nan
-            file.at[index, 'genre'] = genre
-        except:
-            raise RuntimeError(f'{colors.RED}A problem occured while receiving external knowledge in string missing values{colors.END}')
-    file['genre']=file['genre'].ffill()
-    file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
-    file['script type']=file['script type'].ffill()
-    file['script type'] = file['script type'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
-    file['release date (us)']=file['release date (us)'].ffill()
+    for j in NO_TRAGET_STRINGS:
+      if file[j].isnull().any():
+        file[j]=file[j].ffill()
+      else:
+        file[j]=file[j].bfill()
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while processing string missing values{colors.END}')
-
   print(f"{colors.GREEN}OTHER MISSING VALUES HAS BEEN SUCCESFULLY RESTORED!{colors.END}")
-
   return file
 
 def numericMissingValues(file): # replacing ',' and missing values with the mean of the year it belongs to
-  for item in COMMA_COL:
-    if item not in file.columns:
-      COMMA_COL.remove(item)
-      continue
-  if len(COMMA_COL)==0:
-    print(f'{colors.GREEN}NO NUMERIC COLUMNS TO BE PROCESSED.SUCCESFULLY COMPLETED{colors.END}')
-    return file
   try:
-    file[COMMA_COL] = file[COMMA_COL].replace(',', '', regex=True)
-    file['year']=pd.to_numeric(file['year'],errors='coerce')
-    for element in COMMA_COL:
-        # file[element]=file[element].astype(float)
+    for item in ALL_NUMERIC:
+      if item not in file.columns:
+        # print("??",item)
+        ALL_NUMERIC.remove(item)
+        continue
+    if len(ALL_NUMERIC)==0:
+      print(f'{colors.GREEN}NO NUMERIC COLUMNS TO BE PROCESSED.SUCCESFULLY COMPLETED{colors.END}')
+      return file
+  # file=externalIMDb(file) # IMDb
+    for element in ALL_NUMERIC:
+      for index, row in file.iterrows():
+        year = row['year']
+        mean = file[file['year'] == year][element].mean()
         file[element] = pd.to_numeric(file[element], errors='coerce')
-        for index, row in file.iterrows():
-          year = row['year']
-          mean = file[file['year'] == year][element].mean()
-          file[element] = pd.to_numeric(file[element], errors='coerce')
-          if np.isnan(row[element]):
-            if np.isnan(mean):
-              file[element]=file[element].ffill()
-              continue
-            file.loc[index, element] = mean
-        file[element].bfill(inplace=True)
+        if pd.isna(row[element]):
+          if pd.isna(mean):
+            file[element]=file[element].ffill()
+            continue
+          file.loc[index, element] = mean
+      file[element].bfill(inplace=True)
   except:
+    print(element,index,row,mean)
     raise ValueError(f'{colors.RED}A problem occured while processing numeric missing values{colors.END}')
   print(f"{colors.GREEN}NUMERIC MISSING VALUES HAS BEEN SUCCESFULLY RESTORED!{colors.END}")
   return file
+
 
 def scaling(file):
   for item in SCALING_COL:
@@ -278,8 +293,34 @@ def normalization(file):
   print(f"{colors.GREEN}NORMALISING HAS BEEN SUCCESFULLY COMPLETED!{colors.END}")
   return file
 
+def columnDataFormating(file):
+  try:
+    #  Convert each value of the df that is ending with the '%' to decimal (divide by 100)
+    file = file.map(lambda val: float(val.rstrip('%')) / 100 if isinstance(val, str) and val.endswith('%') else val)
+  except:
+    raise RuntimeError(f'{colors.RED}A problem occured while converting precentages to decimal.{colors.END}')
+  try:
+    file[ALL_NUMERIC] = file[ALL_NUMERIC].replace(',', '', regex=True).apply(pd.to_numeric, errors='coerce')
+    # file[NO_TRAGET_STRINGS] = file[NO_TRAGET_STRINGS].replace(',', '', regex=True)
+    file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
+  except:
+    raise RuntimeError(f'{colors.RED}A problem occured while replacing charachters.{colors.END}')
+  print(f"{colors.GREEN}ALL COLUMNS HAS BEEN SUCCESFULLY FORMATED!{colors.END}")
+  return file
 
+def initDataframe(xFile):
+  try:
+    df=pd.read_excel(xFile, sheet_name = 'Sheet1',na_values=['-','0'])
+    df.columns = df.columns.str.lower().str.replace(r'\s+', ' ', regex=True)
+    df = df.map(lambda x: x.lower() if isinstance(x, str) else x)
+    df.columns = df.columns.str.strip()
+    df.to_excel(xFile, index=False)
+  except:
+    raise RuntimeError(f'{colors.RED}A problem occured while initializing the excel file!{colors.END}')
+  print(f"{colors.GREEN}INITIALIZATION HAS BEEN SUCCESFULLY CONVERTED!{colors.END}")
+  return df
 
+# ------------------------------------------------------------------------------------------------------------------------
 # CLASS
 class DataPreprocessor():
 
@@ -287,31 +328,28 @@ class DataPreprocessor():
         self.fileToProcess = fileToProcess
         self.cloneProcessedFile = cloneProcessedFile
 
-        # You can perform any initialization here
-
   # DATA PREPROCESSING
   def executePreprocess(self,type=None):
-    df=pd.read_excel(self.fileToProcess, sheet_name = 'Sheet1',na_values=['-','0'])
-    df.columns = df.columns.str.lower().str.replace(r'\s+', ' ', regex=True)
-    df.columns = df.columns.str.strip()
-    df.to_excel(self.fileToProcess, index=False)
-
-    df=dropUseless(df,USELESS_COL) # DELETE USELESS COLUMNS
-    # externalKnowledge(df) # RETRIEVE EXTERNAL KNOWLEDGE, ADDITIONAL DATA
-    df=precentagesToDecimal(df)# CONVERT PRECENTAGES CELLS TO DECIMAL
+    df=initDataframe(self.fileToProcess)
+    # df=precentagesToDecimal(df)# CONVERT PRECENTAGES CELLS TO DECIMAL
+    df=columnDataFormating(df)
     df=numericMissingValues(df) # RETRIEVE MISSING VALUES
     df=stringMissingValues(df) # RETRIEVE MISSING VALUES
+    df=columnDataFormating(df)
+    df=dropUseless(df,USELESS_COL) # DELETE USELESS COLUMNS
     df=oneHotEncoding(df) # ONE HOT ENCODING
     df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
     df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
-    if type=='normalisation':
-      df=normalization(df)
-    elif type=='scaling':
-      df=scaling(df)
-    # df=scaling(df)
+    # if type=='normalisation':
+    #   df=normalization(df)
+    # elif type=='scaling':
+    #   df=scaling(df)
+    # # df=scaling(df)
     df.to_excel(self.cloneProcessedFile) # Convert pandas updated dataset to a new excel with the final data
-    # missing_data = pd.read_excel(self.cloneProcessedFile).isnull().sum()
+    missing_data = pd.read_excel(self.cloneProcessedFile).isnull().sum()
     # print(f"# of missing data: {missing_data}")
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+      print(f"# of missing data:\n{missing_data}")
     # print(df.describe().T)
     print(f"------------------------PRE-PROCESSING-FINISHED-------------------------\n")
     return df
@@ -320,5 +358,9 @@ if __name__=='__main__':
   # dp=DataPreprocessor("./movies_test _anon_sample.xlsx","sample.xlsx")
   dp=DataPreprocessor("Book.xlsx","datesFour.xlsx")
   dataset=dp.executePreprocess()
+  if dataset.isna().any().any():
+    print("DataFrame contains NaN values.")
+  else:
+      print("DataFrame does not contain NaN values.")
   print(dataset.head())
-  print(dataset.columns)
+  # print(dataset.columns)
