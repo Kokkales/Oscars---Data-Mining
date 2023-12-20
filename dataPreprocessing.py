@@ -11,13 +11,10 @@ from imdb import IMDb
 from openpyxl import load_workbook, Workbook
 
 
-ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)',
-             'foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
+ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)','foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TARGET_STRINGS=['oscar winner','oscar detail']
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-# SCALING_COL=['average critics','average audience','opening weekend','domestic gross','foreign gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating'
-# ]
 USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity']
 
 class colors:
@@ -26,13 +23,10 @@ class colors:
     END = '\033[0m'
 
 def oneHotEncoding(file):
-  print(file.head())
   # SCRIPT TYPE
   if 'script type' in file.columns:
     try:
-      # one_hot_encoded = file['script type'].str.get_dummies(',').astype(int) # not working
       one_hot_encoded = pd.get_dummies(file['script type'].apply(lambda x: next((t for t in TYPES if str(x).startswith(t)), None))).astype(int)
-      # Concatenate the one-hot encoded DataFrame with the original DataFrame
       file = pd.concat([file, one_hot_encoded], axis=1)
       file=dropUseless(file,['script type'])
     except:
@@ -41,13 +35,7 @@ def oneHotEncoding(file):
   # OSCAR DETAILS
   if 'oscar detail' in file.columns:
     try:
-      # for item in file['oscar detail']:
-      #   if item['oscar detail']!=np.isnan:
-      #     print(file['oscar detail'])
-      # one_hot_encoded = file['oscar detail'].str.get_dummies(',').astype(int)
       one_hot_encoded = file['oscar detail'].str.get_dummies(', ').astype(int)
-      # one_hot_encoded = file['oscar detail'].str.split(',', expand=True).stack().str.get_dummies(',').astype(int)
-      # Concatenate the one-hot encoded DataFrame with the original DataFrame
       file = pd.concat([file, one_hot_encoded], axis=1)
       file=dropUseless(file,['oscar detail'])
     except:
@@ -80,7 +68,7 @@ def oneHotEncoding(file):
       file['genre'] = file['genre'].apply(lambda cell: ' '.join(
         [next((word_set_word for word_set_word in genres if word_set_word[:3] == word[:3]), word) for word in cell.split()]
     ))
-      print('Set:::',genres)
+      # print('Set:::',genres)
       for genre in genres:
           file[genre] = file['genre'].apply(lambda x: 1 if genre in x.split() else 0)
       file=dropUseless(file,['genre'])
@@ -172,19 +160,6 @@ def externalIMDb(file):
     i=i+1
   print(f'{colors.GREEN}EXTERNAL KNOWLEDGE \'IMDb\' HAS BEEN SUCCESFULLY ADDED{colors.END}')
   # file.to_excel("clone.xlsx")
-  try:
-    for index,row in file.iterrows():
-      if pd.isna(row['genre']):
-        movies = ia.search_movie(row['film'])
-        if movies:
-            movie = ia.get_movie(movies[0].movieID)
-            genre=",".join(movie['genres']).lower()
-        else:
-            print("Movie not found.")
-            genre=pd.isna
-        file.at[index, 'genre'] = genre
-  except:
-      raise RuntimeError(f'{colors.RED}A problem occured while receiving external knowledge in string missing values{colors.END}')
   return file
 
 def externalGenre(file):
@@ -198,7 +173,7 @@ def externalGenre(file):
             genre=",".join(movie['genres']).lower()
         else:
             print("Movie not found.")
-            genre=np.nan
+            genre=pd.isna
         file.at[index, 'genre'] = genre
   except:
       raise RuntimeError(f'{colors.RED}A problem occured while receiving external knowledge in string missing values{colors.END}')
@@ -340,11 +315,10 @@ class DataPreprocessor():
   # DATA PREPROCESSING
   def executePreprocess(self,type=None):
     df=initDataframe(self.fileToProcess)
-    # subset_df = df[['budget ($million)', 'budget recovered', 'budget recovered opening weekend']]
-    # subset_df = df[['rotten tomatoes critics',	'metacritic critics','average critics']]
-    subset_df = df[['rotten tomatoes audience','metacritic audience','average audience']]
-    # Check the correlation matrix
-    getCorrelation(subset_df)
+    # subset = df[['budget ($million)', 'budget recovered', 'budget recovered opening weekend']]
+    # # subset = df[['rotten tomatoes critics',	'metacritic critics','average critics']]
+    # # subset = df[['rotten tomatoes audience','metacritic audience','average audience']]
+    # getCorrelation(subset)
     df=dropUseless(df,USELESS_COL) # DELETE USELESS COLUMNS
     df=columnDataFormating(df)
     df=numericMissingValues(df) # RETRIEVE MISSING VALUES
@@ -357,12 +331,11 @@ class DataPreprocessor():
       df=normalization(df)
     elif type=='scaling':
       df=scaling(df)
-    # df=scaling(df)
-    df.to_excel(self.cloneProcessedFile) # Convert pandas updated dataset to a new excel with the final data
+    df.to_excel(self.cloneProcessedFile)
     missing_data = pd.read_excel(self.cloneProcessedFile).isnull().sum()
     # print(f"# of missing data: {missing_data}")
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-      print(f"# of missing data:\n{missing_data}")
+    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    #   print(f"# of missing data:\n{missing_data}")
     # print(df.describe().T)
     print(f"------------------------PRE-PROCESSING-FINISHED-------------------------\n")
     return df
