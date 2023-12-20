@@ -14,17 +14,19 @@ from openpyxl import load_workbook, Workbook
 ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)',
              'foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
+TARGET_STRINGS=['oscar winner','oscar detail']
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-SCALING_COL=['average critics','average audience','opening weekend','domestic gross','foreign gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating'
-]
-# USELESS_COL=['distributor','imdb vs rt disparity','prime genre']
-USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','of gross earned abroad','distributor','imdb vs rt disparity']
+# SCALING_COL=['average critics','average audience','opening weekend','domestic gross','foreign gross','budget ($million)','budget recovered','budget recovered opening weekend','imdb rating'
+# ]
+USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity']
+
 class colors:
     RED = '\033[91m'
     GREEN = '\033[92m'
     END = '\033[0m'
 
 def oneHotEncoding(file):
+  print(file.head())
   # SCRIPT TYPE
   if 'script type' in file.columns:
     try:
@@ -39,7 +41,12 @@ def oneHotEncoding(file):
   # OSCAR DETAILS
   if 'oscar detail' in file.columns:
     try:
-      one_hot_encoded = file['oscar detail'].str.get_dummies(',').astype(int)
+      # for item in file['oscar detail']:
+      #   if item['oscar detail']!=np.isnan:
+      #     print(file['oscar detail'])
+      # one_hot_encoded = file['oscar detail'].str.get_dummies(',').astype(int)
+      one_hot_encoded = file['oscar detail'].str.get_dummies(', ').astype(int)
+      # one_hot_encoded = file['oscar detail'].str.split(',', expand=True).stack().str.get_dummies(',').astype(int)
       # Concatenate the one-hot encoded DataFrame with the original DataFrame
       file = pd.concat([file, one_hot_encoded], axis=1)
       file=dropUseless(file,['oscar detail'])
@@ -59,7 +66,7 @@ def oneHotEncoding(file):
           # print(correctedWord)
           correctGenre.append(correctedWord)
       genres.update(correctGenre)
-      print("c:",genres)
+      # print("c:",genres)
       words_to_remove = set()
       for word1 in genres:
             for word2 in genres:
@@ -112,15 +119,6 @@ def oneHotEncoding(file):
   # print(file.shape)
   print(f'{colors.GREEN}ONE HOT ENCODING HAS BEEN SUCESSFULLY COMPLETED!{colors.END}')
   return file
-
-# def precentagesToDecimal(file):
-#   try:
-#     #  Convert each value of the df that is ending with the '%' to decimal (divide by 100)
-#     file = file.map(lambda val: float(val.rstrip('%')) / 100 if isinstance(val, str) and val.endswith('%') else val)
-#   except:
-#     raise RuntimeError(f'{colors.RED}A problem occured while converting precentages to decimal.{colors.END}')
-#   print(f"{colors.GREEN}PRECENTAGES HAS BEEN SUCCESFULLY CONVERTED!{colors.END}")
-#   return file
 
 def dropUseless(file,uselessColumns):
   try:
@@ -183,7 +181,7 @@ def externalIMDb(file):
             genre=",".join(movie['genres']).lower()
         else:
             print("Movie not found.")
-            genre=np.nan
+            genre=pd.isna
         file.at[index, 'genre'] = genre
   except:
       raise RuntimeError(f'{colors.RED}A problem occured while receiving external knowledge in string missing values{colors.END}')
@@ -238,7 +236,6 @@ def numericMissingValues(file): # replacing ',' and missing values with the mean
   try:
     for item in ALL_NUMERIC:
       if item not in file.columns:
-        # print("??",item)
         ALL_NUMERIC.remove(item)
         continue
     if len(ALL_NUMERIC)==0:
@@ -264,30 +261,30 @@ def numericMissingValues(file): # replacing ',' and missing values with the mean
 
 
 def scaling(file):
-  for item in SCALING_COL:
-    if item not in SCALING_COL:
-      SCALING_COL.remove(item)
+  for item in ALL_NUMERIC:
+    if item not in ALL_NUMERIC:
+      ALL_NUMERIC.remove(item)
       continue
-  if len(SCALING_COL)!=0:
+  if len(ALL_NUMERIC)!=0:
     try:
       scaler = StandardScaler()
-      file[SCALING_COL] = scaler.fit_transform(file[SCALING_COL])
+      file[ALL_NUMERIC] = scaler.fit_transform(file[ALL_NUMERIC])
     except:
       raise ValueError(f'{colors.RED}A problem occured while scaling values{colors.END}')
   print(f"{colors.GREEN}SCALING HAS BEEN SUCCESFULLY COMPLETED!{colors.END}")
   return file
 
 def normalization(file):
-  for item in SCALING_COL:
-    if item not in SCALING_COL:
-      SCALING_COL.remove(item)
+  for item in ALL_NUMERIC:
+    if item not in ALL_NUMERIC:
+      ALL_NUMERIC.remove(item)
       continue
-  if len(SCALING_COL)!=0:
+  if len(ALL_NUMERIC)!=0:
     try:
-      columns_to_normalize = file[SCALING_COL]
+      columns_to_normalize = file[ALL_NUMERIC]
       scaler = MinMaxScaler()
-      normalized_columns = pd.DataFrame(scaler.fit_transform(columns_to_normalize), columns=SCALING_COL)
-      file[SCALING_COL] = normalized_columns
+      normalized_columns = pd.DataFrame(scaler.fit_transform(columns_to_normalize), columns=ALL_NUMERIC)
+      file[ALL_NUMERIC] = normalized_columns
     except:
       raise ValueError(f'{colors.RED}A problem occured while normalising values{colors.END}')
   print(f"{colors.GREEN}NORMALISING HAS BEEN SUCCESFULLY COMPLETED!{colors.END}")
@@ -301,8 +298,11 @@ def columnDataFormating(file):
     raise RuntimeError(f'{colors.RED}A problem occured while converting precentages to decimal.{colors.END}')
   try:
     file[ALL_NUMERIC] = file[ALL_NUMERIC].replace(',', '', regex=True).apply(pd.to_numeric, errors='coerce')
+    file['budget ($million)'] = file['budget ($million)'] * 1000000
     # file[NO_TRAGET_STRINGS] = file[NO_TRAGET_STRINGS].replace(',', '', regex=True)
     file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
+    # file['oscar detail'] = file['oscar detail'].str.extract(r'([^\(]+)')
+    file['oscar detail'] = file['oscar detail'].str.split('(', n=1).str[0].str.strip()
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while replacing charachters.{colors.END}')
   print(f"{colors.GREEN}ALL COLUMNS HAS BEEN SUCCESFULLY FORMATED!{colors.END}")
@@ -315,10 +315,19 @@ def initDataframe(xFile):
     df = df.map(lambda x: x.lower() if isinstance(x, str) else x)
     df.columns = df.columns.str.strip()
     df.to_excel(xFile, index=False)
+    for item in USELESS_COL:
+      if item in ALL_NUMERIC:
+        ALL_NUMERIC.remove(item)
+      if item in NO_TRAGET_STRINGS:
+        NO_TRAGET_STRINGS.remove(item)
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while initializing the excel file!{colors.END}')
   print(f"{colors.GREEN}INITIALIZATION HAS BEEN SUCCESFULLY CONVERTED!{colors.END}")
   return df
+
+def getCorrelation(items):
+  correlation_matrix = items.corr()
+  print(correlation_matrix)
 
 # ------------------------------------------------------------------------------------------------------------------------
 # CLASS
@@ -331,20 +340,24 @@ class DataPreprocessor():
   # DATA PREPROCESSING
   def executePreprocess(self,type=None):
     df=initDataframe(self.fileToProcess)
-    # df=precentagesToDecimal(df)# CONVERT PRECENTAGES CELLS TO DECIMAL
+    # subset_df = df[['budget ($million)', 'budget recovered', 'budget recovered opening weekend']]
+    # subset_df = df[['rotten tomatoes critics',	'metacritic critics','average critics']]
+    subset_df = df[['rotten tomatoes audience','metacritic audience','average audience']]
+    # Check the correlation matrix
+    getCorrelation(subset_df)
+    df=dropUseless(df,USELESS_COL) # DELETE USELESS COLUMNS
     df=columnDataFormating(df)
     df=numericMissingValues(df) # RETRIEVE MISSING VALUES
     df=stringMissingValues(df) # RETRIEVE MISSING VALUES
     df=columnDataFormating(df)
-    df=dropUseless(df,USELESS_COL) # DELETE USELESS COLUMNS
     df=oneHotEncoding(df) # ONE HOT ENCODING
     df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
     df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
-    # if type=='normalisation':
-    #   df=normalization(df)
-    # elif type=='scaling':
-    #   df=scaling(df)
-    # # df=scaling(df)
+    if type=='normalisation':
+      df=normalization(df)
+    elif type=='scaling':
+      df=scaling(df)
+    # df=scaling(df)
     df.to_excel(self.cloneProcessedFile) # Convert pandas updated dataset to a new excel with the final data
     missing_data = pd.read_excel(self.cloneProcessedFile).isnull().sum()
     # print(f"# of missing data: {missing_data}")
