@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import sklearn
 import warnings
-from sklearn.metrics import classification_report,confusion_matrix,precision_score,f1_score,recall_score
+from sklearn.metrics import classification_report,confusion_matrix,precision_score,f1_score,recall_score,accuracy_score
 from sklearn.exceptions import UndefinedMetricWarning
 # from sklearn.metrics import plot_confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -24,6 +24,15 @@ class Classificationer():
     self.y_train=y_train
     self.y_test=y_test
 
+  def printAccuracy(self,predictions):
+    print(confusion_matrix(self.y_test,predictions))
+    print('\n')
+    print(classification_report(self.y_test,predictions))
+    accuracy = accuracy_score(self.y_test, predictions)
+    print(f'Accuracy on the validation set: {accuracy}')
+    return accuracy
+
+
   # DECISION TREE CLASSIFIER
   def excecuteDtcClassification(self):
     model=DecisionTreeClassifier(criterion='entropy',min_samples_split=80)
@@ -42,10 +51,8 @@ class Classificationer():
     predictions = model.predict(self.X_test)
     # with warnings.catch_warnings():
     #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-    print(confusion_matrix(self.y_test,predictions))
-    print('\n')
-    print(classification_report(self.y_test,predictions))
-    return 'Decision Tree Regressor working.'
+    acc=self.printAccuracy(predictions)
+    return f'Decision Tree Regressor working. with acc={acc} on the validation test.'
 
   # RANDOM FOREST
   # warnings.filterwarnings('ignore')
