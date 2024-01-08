@@ -8,7 +8,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from textblob import Word
 from imdb import IMDb
-from openpyxl import load_workbook, Workbook
 
 
 ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)','foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
@@ -330,7 +329,7 @@ class DataPreprocessor():
     df=oneHotEncoding(df) # ONE HOT ENCODING
     df=deleteDuplicate(df,deleteDuplicateNames)  # CHECK FOR DUPLICATE ROWS
     df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
-    if type=='normalisation':
+    if type=='normalization':
       df=normalization(df)
     elif type=='scaling':
       df=scaling(df)

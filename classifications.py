@@ -34,14 +34,15 @@ class Classificationer():
 
 
   # DECISION TREE CLASSIFIER
-  def excecuteDtcClassification(self):
+  def executeDtcClassification(self):
     model=DecisionTreeClassifier(criterion='entropy',min_samples_split=80)
     model.fit(self.X_train,self.y_train)
     predictions = model.predict(self.X_test)
-    print(confusion_matrix(self.y_test,predictions))
-    print('\n')
-    print(classification_report(self.y_test,predictions,zero_division=1))
-    return 'Decision tree classifier working.'
+    # print(confusion_matrix(self.y_test,predictions))
+    # print('\n')
+    # print(classification_report(self.y_test,predictions,zero_division=1))
+    acc=self.printAccuracy(predictions)
+    return f'Decision tree classifier working with acc={acc}.',model
 
 
   # DT
@@ -52,7 +53,7 @@ class Classificationer():
     # with warnings.catch_warnings():
     #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
     acc=self.printAccuracy(predictions)
-    return f'Decision Tree Regressor working. with acc={acc} on the validation test.'
+    return f'Decision Tree Regressor working. with acc={acc} on the validation test.',model
 
   # RANDOM FOREST
   # warnings.filterwarnings('ignore')
@@ -63,10 +64,10 @@ class Classificationer():
     #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
     predictions = model.predict(self.X_test)
     # print(model.feature_importances_)
-    print(confusion_matrix(self.y_test,predictions))
-    print('\n')
-    print(classification_report(self.y_test,predictions))
-
+    # print(confusion_matrix(self.y_test,predictions))
+    # print('\n')
+    # print(classification_report(self.y_test,predictions))
+    acc=self.printAccuracy(predictions)
     importance = model.feature_importances_
     columns=self.X_train.columns
     rfc_cof=pd.Series(importance,columns)
@@ -77,7 +78,7 @@ class Classificationer():
     # print(rfc_cof)
     # correct_predictions = (self.y_test == predictions)# this is yhat with ypredictions
 
-    return 'Random Forest working.'
+    return f'Random Forest working with acc={acc}.'
 
   # K Nearest neighbours
   def executeKnnClassification(self):
@@ -87,10 +88,11 @@ class Classificationer():
     #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
     predictions = model.predict(self.X_test)
     # print(model.feature_importances_)
-    print(confusion_matrix(self.y_test,predictions))
-    print('\n')
-    print(classification_report(self.y_test,predictions))
-    return "KNN is working"
+    # print(confusion_matrix(self.y_test,predictions))
+    # print('\n')
+    # print(classification_report(self.y_test,predictions))
+    acc=self.printAccuracy(predictions)
+    return f"KNN is working with ac{acc}"
 
 
   # Gausian Probabilistic
@@ -101,10 +103,11 @@ class Classificationer():
     #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
     predictions = model.predict(self.X_test)
     # print(model.feature_importances_)
-    print(confusion_matrix(self.y_test,predictions))
-    print('\n')
-    print(classification_report(self.y_test,predictions))
-    return 'Gaussian Probabilistic working.'
+    # print(confusion_matrix(self.y_test,predictions))
+    # print('\n')
+    # print(classification_report(self.y_test,predictions))
+    acc=self.printAccuracy(predictions)
+    return f'Gaussian Probabilistic working with acc={acc}.'
   # SVM
   def executeSvmClassification(self):
     model=SVC()
@@ -113,10 +116,11 @@ class Classificationer():
     # with warnings.catch_warnings():
     #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
     # sklearn.metrics.f1_score(self.y_test, predictions, average='weighted', labels=np.unique(predictions))
-    print(confusion_matrix(self.y_test,predictions))
-    print('\n')
-    print(classification_report(self.y_test,predictions))
-    return 'SVM working.'
+    # print(confusion_matrix(self.y_test,predictions))
+    # print('\n')
+    # print(classification_report(self.y_test,predictions))
+    acc=self.printAccuracy(predictions)
+    return f'SVM working with acc={acc}.'
 
   # SGD
   def executeSgdClassification(self):
