@@ -62,7 +62,7 @@ test_data=fixTestFile(train_data,test_dataset)
 
 imputer = SimpleImputer(strategy='mean')
 if train_data.shape[1]==test_data.shape[1]:
-  X_train, X_valid, y_train, y_valid = train_test_split(train_data,train_target, test_size=0.2, random_state=42)
+  X_train, X_valid, y_train, y_valid = train_test_split(train_data,train_target, test_size=0.2)
 
   # Train a machine learning model (e.g., RandomForestClassifier)
   # model = RandomForestClassifier()
