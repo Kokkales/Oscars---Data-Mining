@@ -15,6 +15,7 @@ from sklearn.neighbors._nearest_centroid import NearestCentroid
 from sklearn.naive_bayes import GaussianNB
 from sklearn.svm import SVC
 from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import mean_squared_error
 
 class Classificationer():
 
@@ -43,17 +44,49 @@ class Classificationer():
     # print(classification_report(self.y_test,predictions,zero_division=1))
     acc=self.printAccuracy(predictions)
     return f'Decision tree classifier working with acc={acc}.',model
-
-
-  # DT
+  # DTr
   def executeDtrClassification(self):
     model=DecisionTreeRegressor()
     model.fit(self.X_train,self.y_train)
     predictions = model.predict(self.X_test)
+    train_predictions = model.predict(self.X_train)
     # with warnings.catch_warnings():
     #   warnings.simplefilter("ignore", category=UndefinedMetricWarning)
     acc=self.printAccuracy(predictions)
-    return f'Decision Tree Regressor working. with acc={acc} on the validation test.',model
+    train_accuracy = accuracy_score(self.y_train, train_predictions)
+    train_precision = precision_score(self.y_train, train_predictions)
+    train_recall = recall_score(self.y_train, train_predictions)
+    train_f1 = f1_score(self.y_train, train_predictions)
+    train_conf_matrix = confusion_matrix(self.y_train, train_predictions)
+
+    # Testing set predictions
+    test_predictions = model.predict(self.X_test)
+
+    # Calculate testing set evaluation metrics
+    test_accuracy = accuracy_score(self.y_test, test_predictions)
+    test_precision = precision_score(self.y_test, test_predictions)
+    test_recall = recall_score(self.y_test, test_predictions)
+    test_f1 = f1_score(self.y_test, test_predictions)
+    test_conf_matrix = confusion_matrix(self.y_test, test_predictions)
+
+    # Display training set metrics
+    print("Training Set Metrics:")
+    print("Accuracy:", train_accuracy)
+    print("Precision:", train_precision)
+    print("Recall:", train_recall)
+    print("F1-Score:", train_f1)
+    print("Confusion Matrix:\n", train_conf_matrix)
+
+    # Display testing set metrics
+    print("\nTesting Set Metrics:")
+    print("Accuracy:", test_accuracy)
+    print("Precision:", test_precision)
+    print("Recall:", test_recall)
+    print("F1-Score:", test_f1)
+    print("Confusion Matrix:\n", test_conf_matrix)
+
+    return f'Decision Tree Regressor working.\n', model
+    # return f'Decision Tree Regressor working. with acc={acc} on the validation test.',model
 
   # RANDOM FOREST
   # warnings.filterwarnings('ignore')
@@ -78,7 +111,7 @@ class Classificationer():
     # print(rfc_cof)
     # correct_predictions = (self.y_test == predictions)# this is yhat with ypredictions
 
-    return f'Random Forest working with acc={acc}.'
+    return f'Random Forest working with acc={acc}.',model
 
   # K Nearest neighbours
   def executeKnnClassification(self):
@@ -92,7 +125,7 @@ class Classificationer():
     # print('\n')
     # print(classification_report(self.y_test,predictions))
     acc=self.printAccuracy(predictions)
-    return f"KNN is working with ac{acc}"
+    return f"KNN is working with ac{acc}",model
 
 
   # Gausian Probabilistic
@@ -107,7 +140,7 @@ class Classificationer():
     # print('\n')
     # print(classification_report(self.y_test,predictions))
     acc=self.printAccuracy(predictions)
-    return f'Gaussian Probabilistic working with acc={acc}.'
+    return f'Gaussian Probabilistic working with acc={acc}.',model
   # SVM
   def executeSvmClassification(self):
     model=SVC()
@@ -120,7 +153,7 @@ class Classificationer():
     # print('\n')
     # print(classification_report(self.y_test,predictions))
     acc=self.printAccuracy(predictions)
-    return f'SVM working with acc={acc}.'
+    return f'SVM working with acc={acc}.',model
 
   # SGD
   def executeSgdClassification(self):

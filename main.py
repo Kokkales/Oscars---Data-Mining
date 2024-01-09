@@ -138,7 +138,8 @@ def fixPredictionFile(train_file, test_file):
     test_file = test_file.drop(columns= set(test_file.columns) - set(train_file.columns))
 
     test_file.to_excel('to_predict_final.xlsx')
-    # print(train_file.shape,test_file.shape)
+    print(train_file.shape,test_file.shape)
+    print('::',test_file.sort_index(axis=1).shape)
     return test_file.sort_index(axis=1)
     # diff_train_columns = set(train_file.columns) - set(test_file.columns)
 
@@ -149,38 +150,37 @@ def fixPredictionFile(train_file, test_file):
     # test_file.to_excel('to_predict_final.xlsx', index=False)
     # return test_file
 
+# ================= TRAINING +++++++++++++++++++++++
+# Preparing Training Dataset
 train_dataset = pd.read_excel('final.xlsx', sheet_name='Sheet1')
 train_target, train_data = separateData(train_dataset)
-print(train_data.shape)
 
 scaler = MinMaxScaler()
 train_data_scaled = scaler.fit_transform(train_data)
 scaled_dataset = pd.DataFrame(train_data_scaled, columns=train_data.columns)
 train_data = scaled_dataset
-
-prediction_dataset = pd.read_excel('to_predict_final.xlsx', sheet_name='Sheet1')
-prediction_data = fixPredictionFile(train_data, prediction_dataset)
-print(train_data.shape)
-
-# ================= TRAINING +++++++++++++++++++++++
+# print(train_data.head)
 # Split and train data
-X_train, X_test, y_train, y_test = train_test_split(train_data, train_target, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(train_data, train_target, test_size=0.3)
 cl = Classificationer(X_train, X_test, y_train, y_test)
 # predictions, model = cl.executeDtcClassification()
-predictions,model=cl.executeDtrClassification()
+# predictions,model=cl.executeDtrClassification()
+# predictions, model = cl.executeSvmClassification()
+# predictions, model = cl.executeGpClassification()#dif
+# predictions, model = cl.executeKnnClassification()
+predictions, model = cl.executeRfClassification()
 
 # --------------------- PREDICT ----------------------------------
 # Now, load the data for prediction (to_predict_final.xlsx)
 to_predict_data = pd.read_excel('to_predict_final.xlsx', sheet_name='Sheet1')
 to_predict_data_fixed = fixPredictionFile(train_data, to_predict_data)
-
 # Ensure that the columns of to_predict_data_fixed are in the same order as during training
 to_predict_data_fixed = to_predict_data_fixed[train_data.columns]
-
 scaled_to_predict_data = scaler.transform(to_predict_data_fixed)
 predictions = model.predict(scaled_to_predict_data)
-
 to_predict_data_fixed['Predicted_Oscar_Winners'] = predictions
-to_predict_data_fixed.to_excel('predictionsTwo.xlsx', index=False)
-print(to_predict_data.columns)
-print(train_data.columns)
+to_predict_data_fixed.reset_index(drop=True, inplace=True)
+to_predict_data_fixed['id'] = range(1, len(to_predict_data_fixed) + 1)
+to_predict_data_fixed = to_predict_data_fixed[['id', 'Predicted_Oscar_Winners']]
+to_predict_data_fixed.to_excel('predictionsFinal.xlsx', index=False)
+print(to_predict_data_fixed.shape)
