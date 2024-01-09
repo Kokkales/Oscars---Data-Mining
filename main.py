@@ -121,16 +121,37 @@ def separateData(ds):
 
 def fixPredictionFile(train_file, test_file):
     diff_train_columns = set(train_file.columns) - set(test_file.columns)
+    diff_test_columns = set(test_file.columns) - set(train_file.columns)
 
+    for test_column in diff_test_columns:
+        for train_column in diff_train_columns:
+            # Check if the columns share at least four letters
+            if len(set(test_column).intersection(train_column)) >= 4:
+                # Replace the column name in test_file
+                test_file = test_file.rename(columns={test_column: train_column})
+                break  # Stop searching for similar columns once a match is found
+
+    # Add missing columns to test_file with values set to 0
     for train_column in diff_train_columns:
         test_file[train_column] = 0
+    test_file = test_file.loc[:, ~test_file.columns.duplicated(keep='first')]
+    test_file = test_file.drop(columns= set(test_file.columns) - set(train_file.columns))
 
-    test_file = test_file[train_file.columns]
-    test_file.to_excel('to_predict_final.xlsx', index=False)
-    return test_file
+    test_file.to_excel('to_predict_final.xlsx')
+    # print(train_file.shape,test_file.shape)
+    return test_file.sort_index(axis=1)
+    # diff_train_columns = set(train_file.columns) - set(test_file.columns)
 
-train_dataset = pd.read_excel('trained_final.xlsx', sheet_name='Sheet1')
+    # for train_column in diff_train_columns:
+    #     test_file[train_column] = 0
+
+    # test_file = test_file[train_file.columns]
+    # test_file.to_excel('to_predict_final.xlsx', index=False)
+    # return test_file
+
+train_dataset = pd.read_excel('final.xlsx', sheet_name='Sheet1')
 train_target, train_data = separateData(train_dataset)
+print(train_data.shape)
 
 scaler = MinMaxScaler()
 train_data_scaled = scaler.fit_transform(train_data)
@@ -139,6 +160,7 @@ train_data = scaled_dataset
 
 prediction_dataset = pd.read_excel('to_predict_final.xlsx', sheet_name='Sheet1')
 prediction_data = fixPredictionFile(train_data, prediction_dataset)
+print(train_data.shape)
 
 # ================= TRAINING +++++++++++++++++++++++
 # Split and train data

@@ -34,6 +34,10 @@ def oneHotEncoding(file):
   # OSCAR DETAILS
   if 'oscar detail' in file.columns and 'oscar detail' not in USELESS_COL:
     try:
+      file['oscar detail'] = file['oscar detail'].apply(lambda x: re.sub(r'\([^)]*\)', '', str(x)))
+
+      # # Save the modified DataFrame back to Excel
+      # file.to_excel('modified_file.xlsx', index=False)
       one_hot_encoded = file['oscar detail'].str.get_dummies(', ').astype(int)
       file = pd.concat([file, one_hot_encoded], axis=1)
       file=dropUseless(file,['oscar detail'])
