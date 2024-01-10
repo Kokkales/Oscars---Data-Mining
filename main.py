@@ -13,6 +13,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, classification_report
 import math
 
 def seperateData(ds):
@@ -42,14 +43,14 @@ def fixTestFile(train_file,test_file):
   test_file = test_file.loc[:, ~test_file.columns.duplicated(keep='first')]
   test_file = test_file.drop(columns= set(test_file.columns) - set(train_file.columns))
 
-  test_file.to_excel('to_predict_final.xlsx')
+  test_file.to_excel('edited_final.xlsx')
   # print(train_file.shape,test_file.shape)
   return test_file.sort_index(axis=1)
 
 
 # dp=DataPreprocessor("Book.xlsx","trained_final.xlsx")
 # train_dataset=dp.executePreprocess()#options: normalization, scaling
-train_dataset=pd.read_excel('trained_final.xlsx', sheet_name = 'Sheet1') #dates four give s better results
+train_dataset=pd.read_excel('test.xlsx', sheet_name = 'Sheet1') #dates four give s better results
 train_target,train_data=seperateData(train_dataset)
 train_data=train_data.sort_index(axis=1)
 # --------------------------------------------------------------
@@ -62,7 +63,7 @@ test_data=fixTestFile(train_data,test_dataset)
 
 imputer = SimpleImputer(strategy='mean')
 if train_data.shape[1]==test_data.shape[1]:
-  X_train, X_valid, y_train, y_valid = train_test_split(train_data,train_target, test_size=0.2)
+  X_train, X_valid, y_train, y_valid = train_test_split(train_data,train_target, test_size=0.2,random_state=42)
 
   # Train a machine learning model (e.g., RandomForestClassifier)
   # model = RandomForestClassifier()
@@ -75,6 +76,11 @@ if train_data.shape[1]==test_data.shape[1]:
 
   # Evaluate the model on the validation set
   accuracy = accuracy_score(y_valid, y_pred)
+
+  conf_matrix = confusion_matrix(y_valid, y_pred)
+  print("Confusion Matrix:\n", conf_matrix)
+  class_report = classification_report(y_valid, y_pred)
+  print("Classification Report:\n", class_report)
   print(f'Accuracy on the validation set: {accuracy}')
 
   # Now, load the data for prediction (to_predict_final.xlsx)
@@ -90,7 +96,7 @@ if train_data.shape[1]==test_data.shape[1]:
   to_predict_data['Predicted_Oscar_Winners'] = predictions
 
   # Save the results to a new file or use them as needed
-  to_predict_data.to_excel('predictionsThree.xlsx', index=False)
+  to_predict_data.to_excel('predictionsFour.xlsx', index=False)
 
 
 

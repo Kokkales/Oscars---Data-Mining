@@ -1,21 +1,16 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import re
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from textblob import Word
 from imdb import IMDb
-from openpyxl import load_workbook, Workbook
 
 
 ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)','foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TARGET_STRINGS=['oscar winner','oscar detail']
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-USELESS_COL=['id','rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail']
+USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity']
 
 class colors:
     RED = '\033[91m'
@@ -33,7 +28,7 @@ def oneHotEncoding(file):
       raise RuntimeError(f'{colors.RED}A problem occured while one-hot encoding script-type{colors.END}')
 
   # OSCAR DETAILS
-  if 'oscar detail' in file.columns and 'oscar detail' not in USELESS_COL:
+  if 'oscar detail' in file.columns:
     try:
       one_hot_encoded = file['oscar detail'].str.get_dummies(', ').astype(int)
       file = pd.concat([file, one_hot_encoded], axis=1)
@@ -49,12 +44,9 @@ def oneHotEncoding(file):
       correctGenre=[]
       for item in file['genre']:
         for word in item.split():
-          # correctedWords=[]
           correctedWord=str(Word(word).correct().lower())
-          # print(correctedWord)
           correctGenre.append(correctedWord)
       genres.update(correctGenre)
-      # print("c:",genres)
       words_to_remove = set()
       for word1 in genres:
             for word2 in genres:
@@ -64,11 +56,9 @@ def oneHotEncoding(file):
                         shorter_word = word1 if len(word1) < len(word2) else word2
                         words_to_remove.add(shorter_word)
       genres.difference_update(words_to_remove)
-      # print(genres)
       file['genre'] = file['genre'].apply(lambda cell: ' '.join(
         [next((word_set_word for word_set_word in genres if word_set_word[:3] == word[:3]), word) for word in cell.split()]
     ))
-      # print('Set:::',genres)
       for genre in genres:
           file[genre] = file['genre'].apply(lambda x: 1 if genre in x.split() else 0)
       file=dropUseless(file,['genre'])
@@ -121,15 +111,13 @@ def dropUseless(file,uselessColumns):
   print(f"{colors.GREEN}USELESS COLUMNS HAS BEEN SUCCESFULLY DELETED!{colors.END}")
   return file
 
-def deleteDuplicate(file,dropNames):
+def deleteDuplicate(file):
   try:
     if (file.duplicated().sum() != 0) or (not file[file.duplicated(subset=['film'])].empty):
       print(f'The dataset contains {(file.duplicated(subset=["film"])).sum()} duplicate films that need to be removed.')
       print(f'The dataset contains {file.duplicated().sum()} duplicate rows that need to be removed.')
-      # Exclude rows where 'film' contains '??'
       file.drop_duplicates(inplace=True)
-      if dropNames==True:
-        file = file.drop_duplicates(subset=['film'],keep='first')
+      file = file.drop_duplicates(subset=['film'],keep='first')
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while deleting duplicates{colors.END}')
   print(f"{colors.GREEN}DUPLICATE ROWS HAVE BEEN SUCCESFULLY DELETED!{colors.END}")
@@ -276,11 +264,8 @@ def columnDataFormating(file):
   try:
     file[ALL_NUMERIC] = file[ALL_NUMERIC].replace(',', '', regex=True).apply(pd.to_numeric, errors='coerce')
     file['budget ($million)'] = file['budget ($million)'] * 1000000
-    # file[NO_TRAGET_STRINGS] = file[NO_TRAGET_STRINGS].replace(',', '', regex=True)
     file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
-    # file['oscar detail'] = file['oscar detail'].str.extract(r'([^\(]+)')
-    # if 'oscar detail' not in USELESS_COL:
-      # file['oscar detail'] = file['oscar detail'].str.split('(', n=1).str[0].str.strip()
+    file['oscar detail'] = file['oscar detail'].str.split('(', n=1).str[0].str.strip()
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while replacing charachters.{colors.END}')
   print(f"{colors.GREEN}ALL COLUMNS HAS BEEN SUCCESFULLY FORMATED!{colors.END}")
@@ -316,7 +301,7 @@ class DataPreprocessor():
         self.cloneProcessedFile = cloneProcessedFile
 
   # DATA PREPROCESSING
-  def executePreprocess(self,type=None,deleteDuplicateNames=True):
+  def executePreprocess(self,type=None):
     df=initDataframe(self.fileToProcess)
     # subset = df[['budget ($million)', 'budget recovered', 'budget recovered opening weekend']]
     # # subset = df[['rotten tomatoes critics',	'metacritic critics','average critics']]
@@ -328,28 +313,21 @@ class DataPreprocessor():
     df=stringMissingValues(df) # RETRIEVE MISSING VALUES
     df=columnDataFormating(df)
     df=oneHotEncoding(df) # ONE HOT ENCODING
-    df=deleteDuplicate(df,deleteDuplicateNames)  # CHECK FOR DUPLICATE ROWS
+    df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
     df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
     if type=='normalisation':
       df=normalization(df)
     elif type=='scaling':
       df=scaling(df)
     df.to_excel(self.cloneProcessedFile)
-    missing_data = pd.read_excel(self.cloneProcessedFile).isnull().sum()
-    # print(f"# of missing data: {missing_data}")
-    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    #   print(f"# of missing data:\n{missing_data}")
-    # print(df.describe().T)
     print(f"------------------------PRE-PROCESSING-FINISHED-------------------------\n")
     return df
 
 if __name__=='__main__':
-  # dp=DataPreprocessor("./movies_test _anon_sample.xlsx","sample.xlsx")
-  dp=DataPreprocessor("Book.xlsx","final.xlsx")
+  dp=DataPreprocessor("./moviesUpdated.xlsx","test.xlsx")
   dataset=dp.executePreprocess()
   if dataset.isna().any().any():
     print("DataFrame contains NaN values.")
   else:
       print("DataFrame does not contain NaN values.")
   print(dataset.head())
-  # print(dataset.columns)
