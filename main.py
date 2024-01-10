@@ -67,7 +67,7 @@ if train_data.shape[1]==test_data.shape[1]:
   # Train a machine learning model (e.g., RandomForestClassifier)
   # model = RandomForestClassifier()
   # model.fit(X_train, y_train)
-  model = DecisionTreeRegressor()
+  model = DecisionTreeClassifier()
   model.fit(X_train, y_train)
 
   # Make predictions on the validation set
@@ -90,7 +90,7 @@ if train_data.shape[1]==test_data.shape[1]:
   to_predict_data['Predicted_Oscar_Winners'] = predictions
 
   # Save the results to a new file or use them as needed
-  to_predict_data.to_excel('predictions.xlsx', index=False)
+  to_predict_data.to_excel('predictionsThree.xlsx', index=False)
 
 
 
