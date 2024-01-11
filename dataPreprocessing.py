@@ -10,7 +10,8 @@ ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average c
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TARGET_STRINGS=['oscar winner','oscar detail']
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity']
+USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar details']
+# USELESS_COL=['distributor','oscar detail','opening weekend','domestic gross','foreign gross','worldwide gross','genre','primary genre','script type','release date (us)']
 
 class colors:
     RED = '\033[91m'
@@ -274,6 +275,7 @@ def columnDataFormating(file):
 def initDataframe(xFile):
   try:
     df=pd.read_excel(xFile, sheet_name = 'Sheet1',na_values=['-','0'])
+    print(df.columns)
     df.columns = df.columns.str.lower().str.replace(r'\s+', ' ', regex=True)
     df = df.map(lambda x: x.lower() if isinstance(x, str) else x)
     df.columns = df.columns.str.strip()
