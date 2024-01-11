@@ -4,6 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from textblob import Word
 from imdb import IMDb
+import re
 
 
 ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)','foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
@@ -31,6 +32,7 @@ def oneHotEncoding(file):
   # OSCAR DETAILS
   if 'oscar detail' in file.columns:
     try:
+      file['oscar detail'] = file['oscar detail'].apply(lambda x: re.sub(r'\([^)]*\)', '', str(x)))
       one_hot_encoded = file['oscar detail'].str.get_dummies(', ').astype(int)
       file = pd.concat([file, one_hot_encoded], axis=1)
       file=dropUseless(file,['oscar detail'])
@@ -86,7 +88,20 @@ def oneHotEncoding(file):
         11: 'november',
         12: 'december'
     }
+      # def get_season(month):
+      #   if month in [12, 1, 2]:
+      #       return 'winter'
+      #   elif month in [3, 4, 5]:
+      #       return 'spring'
+      #   elif month in [6, 7, 8]:
+      #       return 'summer'
+      #   else:
+      #       return 'fall'
 
+      # file['season'] = file['release date (us)'].apply(lambda x: get_season(x))
+      # one_hot_encoded = pd.get_dummies(file['season'], prefix='').astype(int)
+      # file = pd.concat([file, one_hot_encoded], axis=1)
+      # file = file.drop(['season'], axis=1)
       # Nominalize the 'release date (us)' column
       file['release date (us)'] = file['release date (us)'].map(monthMapping)
       one_hot_encoded = pd.get_dummies(file['release date (us)'], prefix='').astype(int)
@@ -266,7 +281,8 @@ def columnDataFormating(file):
     file[ALL_NUMERIC] = file[ALL_NUMERIC].replace(',', '', regex=True).apply(pd.to_numeric, errors='coerce')
     file['budget ($million)'] = file['budget ($million)'] * 1000000
     file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
-    file['oscar detail'] = file['oscar detail'].str.split('(', n=1).str[0].str.strip()
+    # if 'oscar detail' not in USELESS_COL:
+    #   file['oscar detail'] = file['oscar detail'].str.split('(', n=1).str[0].str.strip()
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while replacing charachters.{colors.END}')
   print(f"{colors.GREEN}ALL COLUMNS HAS BEEN SUCCESFULLY FORMATED!{colors.END}")

@@ -3,6 +3,7 @@ from classifications import Classificationer
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.impute import SimpleImputer
 import seaborn as sns
@@ -14,6 +15,12 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import recall_score
 import math
 
 def seperateData(ds):
@@ -52,36 +59,55 @@ def fixTestFile(train_file,test_file):
 # train_dataset=dp.executePreprocess()#options: normalization, scaling
 train_dataset=pd.read_excel('test.xlsx', sheet_name = 'Sheet1') #dates four give s better results
 train_target,train_data=seperateData(train_dataset)
+print(train_data.columns)
 train_data=train_data.sort_index(axis=1)
 # --------------------------------------------------------------
 # df=DataPreprocessor("./movies_test _anon_sample.xlsx","to_predict_final.xlsx")
 # test_dataset=df.executePreprocess(deleteDuplicateNames=False)#options: normalization, scaling
 test_dataset=pd.read_excel('to_predict_final.xlsx', sheet_name = 'Sheet1') #dates four give s better results
 test_data=fixTestFile(train_data,test_dataset)
+print(train_data.columns)
 # print(test_data.shape,train_data.shape)
 
 
 imputer = SimpleImputer(strategy='mean')
 if train_data.shape[1]==test_data.shape[1]:
-  X_train, X_valid, y_train, y_valid = train_test_split(train_data,train_target, test_size=0.2,random_state=42)
+  sum=0
+  for i in range(1):
+    X_train, X_valid, y_train, y_valid = train_test_split(train_data,train_target, test_size=0.2,random_state=42)
 
-  # Train a machine learning model (e.g., RandomForestClassifier)
-  # model = RandomForestClassifier()
-  # model.fit(X_train, y_train)
-  model = DecisionTreeClassifier()
-  model.fit(X_train, y_train)
+    # Train a machine learning model (e.g., RandomForestClassifier)
+    # model = RandomForestClassifier(random_state=42) #recall 0.17, f1-score 0.29 acc=0.94 ill defined
+    # model = DecisionTreeClassifier()#recall 0.28, f1-score 0.33, acc=0.92
+    model = DecisionTreeRegressor() #recall 0.28, f1-score 0.34, acc=0.92
+    # model= MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=42) #ill defined
+    # model=SVC( random_state=42)# ill defined
+    # model=KNeighborsClassifier(n_neighbors=5) # ill defined
+    # model=LogisticRegression(random_state=42) # ill defined
+    # model=GaussianNB() # ill defined
+    # model= SGDClassifier(loss='hinge', alpha=0.0001, max_iter=1000, random_state=42) # ill defined
 
-  # Make predictions on the validation set
-  y_pred = model.predict(X_valid)
+    model.fit(X_train, y_train)
 
-  # Evaluate the model on the validation set
-  accuracy = accuracy_score(y_valid, y_pred)
+    # Make predictions on the validation set
+    y_pred = model.predict(X_valid)
 
-  conf_matrix = confusion_matrix(y_valid, y_pred)
-  print("Confusion Matrix:\n", conf_matrix)
-  class_report = classification_report(y_valid, y_pred)
-  print("Classification Report:\n", class_report)
-  print(f'Accuracy on the validation set: {accuracy}')
+    # Evaluate the model on the validation set
+    accuracy = accuracy_score(y_valid, y_pred)
+
+    conf_matrix = confusion_matrix(y_valid, y_pred)
+    print("Confusion Matrix:\n", conf_matrix)
+    class_report = classification_report(y_valid, y_pred)
+    print("Classification Report:\n", class_report)
+    print(f'Accuracy on the validation set: {accuracy}')
+    class_rep = classification_report(y_valid, y_pred)
+
+    # Extract the recall value
+    sum =sum+ recall_score(y_valid, y_pred)
+
+    # Print the recall value
+  # print(f"Recall: {sum/500}")
+
 
   # Now, load the data for prediction (to_predict_final.xlsx)
   to_predict_data = test_data
