@@ -87,11 +87,11 @@ if trainData.shape[1]==predictData.shape[1]:
     # Train a machine learning model (e.g., RandomForestClassifier)
     # model = RandomForestClassifier(random_state=42) #recall 0.17, f1-score 0.29 acc=0.94 ill defined
     # model = LogisticRegression(max_iter=1500, random_state=42)
-    model = DecisionTreeRegressor(random_state=42) #recall 0.28, f1-score 0.34, acc=0.92
+    # model = DecisionTreeRegressor(random_state=42) #recall 0.28, f1-score 0.34, acc=0.92
+    model = DecisionTreeClassifier(random_state=42)#recall 0.28, f1-score 0.33, acc=0.92
     # model = GradientBoostingClassifier(random_state=42)
 
     # model = XGBClassifier(random_state=42)
-    # model = DecisionTreeClassifier(random_state=42)#recall 0.28, f1-score 0.33, acc=0.92
     # model= MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=42) #ill defined
     # model=SVC()# ill defined
     # model=KNeighborsClassifier(n_neighbors=3) # ill defined

@@ -19,16 +19,20 @@ USELESS_COL=['imdb vs diaprity',
     'budget recovered opening weekend',
     'rotten tomatoes vs metacritic deviance',
     'imdb vs rt disparity',
-    'average audience',
+    # 'average audience',
     'distributor',
-    # 'worldwide gross',
-    'foreign gross',
     'worldwide gross',
+    # 'foreign gross',
+    # 'worldwide gross',
     'worldwide gross ($million)',
     'foreign gross ($million)',
     'domestic gross ($million)',
     'script type',
-    'release date (us)']
+    'release date (us)',
+    'rotten tomatoes audience',
+    'audience vs critics deviance'
+    # 'metacritic audience'
+    ]
 # USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail']
 class colors:
     RED = '\033[91m'
@@ -308,7 +312,6 @@ def columnDataFormating(file):
 def initDataframe(xFile):
   try:
     df=pd.read_excel(xFile, sheet_name = 'Sheet1',na_values=['-','0'])
-    print(df.columns)
     df.columns = df.columns.str.lower().str.replace(r'\s+', ' ', regex=True)
     df = df.map(lambda x: x.lower() if isinstance(x, str) else x)
     df.columns = df.columns.str.strip()
@@ -349,7 +352,7 @@ class DataPreprocessor():
     df=columnDataFormating(df)
     df=oneHotEncoding(df) # ONE HOT ENCODING
     df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
-    df=dropUseless(df,['film']) # DELETE USELESS COLUMNS
+    df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
     if type=='normalisation':
       df=normalization(df)
     elif type=='scaling':
