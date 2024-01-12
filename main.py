@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
 import seaborn as sns
 import numpy as np
 import scipy as sc
@@ -21,15 +22,22 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import recall_score
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.ensemble import GradientBoostingClassifier
 import math
+import subprocess
+from xgboost import XGBClassifier
 
 def seperateData(ds):
+  if 'oscar winners' not in ds.columns:
+    raise ValueError('Oscar winners not in the dataset')
   target=ds['oscar winners']
   col=[]
-  for feature in ds.columns:
-    if feature!='oscar winners':
-      col.append(feature)
-  data=ds[col]
+  data=ds.drop(columns='oscar winners')
+  # for feature in ds.columns:
+  #   if feature!='oscar winners':
+  #     col.append(feature)
+  # data=ds[col]
   return (target,data)
 
 def fixTestFile(train_file,test_file):
@@ -55,40 +63,59 @@ def fixTestFile(train_file,test_file):
   return test_file.sort_index(axis=1)
 
 
+scaler = MinMaxScaler()
 # dp=DataPreprocessor("Book.xlsx","trained_final.xlsx")
-# train_dataset=dp.executePreprocess()#options: normalization, scaling
-train_dataset=pd.read_excel('test.xlsx', sheet_name = 'Sheet1') #dates four give s better results
-train_target,train_data=seperateData(train_dataset)
-print(train_data.columns)
-train_data=train_data.sort_index(axis=1)
+# trainDataset=dp.executePreprocess()#options: normalization, scaling
+trainDataset=pd.read_excel('test.xlsx', sheet_name = 'Sheet1') #dates four give s better results
+datasetColumns=trainDataset.columns
+trainTarget,trainData=seperateData(trainDataset)
+trainData=trainData.sort_index(axis=1)
+scaledTrainDataset=scaler.fit_transform(trainData)
 # --------------------------------------------------------------
 # df=DataPreprocessor("./movies_test _anon_sample.xlsx","to_predict_final.xlsx")
-# test_dataset=df.executePreprocess(deleteDuplicateNames=False)#options: normalization, scaling
-test_dataset=pd.read_excel('to_predict_final.xlsx', sheet_name = 'Sheet1') #dates four give s better results
-test_data=fixTestFile(train_data,test_dataset)
-print(train_data.columns)
-# print(test_data.shape,train_data.shape)
-
+# predictDataset=df.executePreprocess(deleteDuplicateNames=False)#options: normalization, scaling
+predictDataset=pd.read_excel('to_predict_final.xlsx', sheet_name = 'Sheet1') #dates four give s better results
+predictData=fixTestFile(trainData,predictDataset)
+scaledPredictData=scaler.transform(predictData)
 
 imputer = SimpleImputer(strategy='mean')
-if train_data.shape[1]==test_data.shape[1]:
+if trainData.shape[1]==predictData.shape[1]:
   sum=0
   for i in range(1):
-    X_train, X_valid, y_train, y_valid = train_test_split(train_data,train_target, test_size=0.2,random_state=42)
+    X_train, X_valid, y_train, y_valid = train_test_split(trainData,trainTarget, test_size=0.25,random_state=42)
 
     # Train a machine learning model (e.g., RandomForestClassifier)
     # model = RandomForestClassifier(random_state=42) #recall 0.17, f1-score 0.29 acc=0.94 ill defined
-    # model = DecisionTreeClassifier()#recall 0.28, f1-score 0.33, acc=0.92
-    model = DecisionTreeRegressor() #recall 0.28, f1-score 0.34, acc=0.92
+    # model = LogisticRegression(max_iter=1500, random_state=42)
+    model = DecisionTreeRegressor(random_state=42) #recall 0.28, f1-score 0.34, acc=0.92
+    # model = GradientBoostingClassifier(random_state=42)
+
+    # model = XGBClassifier(random_state=42)
+    # model = DecisionTreeClassifier(random_state=42)#recall 0.28, f1-score 0.33, acc=0.92
     # model= MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=42) #ill defined
-    # model=SVC( random_state=42)# ill defined
-    # model=KNeighborsClassifier(n_neighbors=5) # ill defined
+    # model=SVC()# ill defined
+    # model=KNeighborsClassifier(n_neighbors=3) # ill defined
     # model=LogisticRegression(random_state=42) # ill defined
     # model=GaussianNB() # ill defined
     # model= SGDClassifier(loss='hinge', alpha=0.0001, max_iter=1000, random_state=42) # ill defined
 
     model.fit(X_train, y_train)
 
+    # --------------------------------------------------------------------------------------------
+    feature_importances = model.feature_importances_
+
+    # Create a DataFrame to display features and their importance scores
+    feature_importance_df = pd.DataFrame({'Feature': trainData.columns, 'Importance': feature_importances})
+
+    # Sort the DataFrame by importance scores in descending order
+    feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
+
+    # Select the top 10 features
+    top_10_features = feature_importance_df.head
+
+    # Display the top 10 features
+    print(top_10_features)
+    # --------------------------------------------------------------------------------------------
     # Make predictions on the validation set
     y_pred = model.predict(X_valid)
 
@@ -102,27 +129,18 @@ if train_data.shape[1]==test_data.shape[1]:
     print(f'Accuracy on the validation set: {accuracy}')
     class_rep = classification_report(y_valid, y_pred)
 
-    # Extract the recall value
     sum =sum+ recall_score(y_valid, y_pred)
 
-    # Print the recall value
-  # print(f"Recall: {sum/500}")
+  print(f"Average Recall: {sum/1}")
+  predictions = model.predict(predictData)
+  predictData['predictions'] = predictions
+  predictData['id'] = range(1, len(predictData) + 1)
+  results=predictData[['id','predictions']]
+  results.to_excel('predictionsFour.xlsx', index=False)
+  results.to_csv('predictionsFour.csv', index=False)
+  # print(results.head())
+  subprocess.Popen(['start','excel','predictionsFour.xlsx'],shell=True)
 
-
-  # Now, load the data for prediction (to_predict_final.xlsx)
-  to_predict_data = test_data
-
-  # Handle missing values in the prediction data
-  # to_predict_data = pd.DataFrame(imputer.transform(to_predict_data), columns=to_predict_data.columns)
-
-  # Make predictions on the data for prediction
-  predictions = model.predict(to_predict_data)
-
-  # Add the predictions to the original dataframe if needed
-  to_predict_data['Predicted_Oscar_Winners'] = predictions
-
-  # Save the results to a new file or use them as needed
-  to_predict_data.to_excel('predictionsFour.xlsx', index=False)
 
 
 

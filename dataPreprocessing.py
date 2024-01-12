@@ -11,8 +11,27 @@ ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average c
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TARGET_STRINGS=['oscar winner','oscar detail']
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar details']
-# USELESS_COL=['distributor','oscar detail','opening weekend','domestic gross','foreign gross','worldwide gross','genre','primary genre','script type','release date (us)']
+# USELESS_COL=['imdb vs diaprity','oscar detail','primary genre','genre','opening weekend ($million)',
+#     'budget recovered opening weekend',
+#     'rotten tomatoes vs metacritic deviance',
+#     'worldwide gross',
+#     'imdb vs rt disparity',
+#     'foreign gross ($million)',
+#     'average audience',
+#     'distributor',
+#     'worldwide gross ($million)',
+#     'domestic gross ($million)',
+#     'script type']
+# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','script type','release date (us)','foreign gross','domestic gross'] #this is good gives 13 aces
+# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','script type','release date (us)','worldwide gross'] #this is good gives 15 aces better predictions
+USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','script type','release date (us)','worldwide gross','genre'] #this is good gives 13 aces better predictions
+
+
+
+# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','genre','script type','release date (us)','worldwide gross'] #this is good gives 15 aces better predictions
+# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','genre','script type','release date (us)','foreign gross','domestic gross','budget ($million)'] #this is good gives 25 aces
+# # USELESS_COL=['distributor','oscar detail','opening weekend','domestic gross','foreign gross','worldwide gross','genre','primary genre','script type','release date (us)','imdb vs rt disparity']
+# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar details','genre']
 
 class colors:
     RED = '\033[91m'
@@ -88,24 +107,24 @@ def oneHotEncoding(file):
         11: 'november',
         12: 'december'
     }
-      # def get_season(month):
-      #   if month in [12, 1, 2]:
-      #       return 'winter'
-      #   elif month in [3, 4, 5]:
-      #       return 'spring'
-      #   elif month in [6, 7, 8]:
-      #       return 'summer'
-      #   else:
-      #       return 'fall'
+      def get_season(month):
+        if month in [12, 1, 2]:
+            return 'winter'
+        elif month in [3, 4, 5]:
+            return 'spring'
+        elif month in [6, 7, 8]:
+            return 'summer'
+        else:
+            return 'fall'
 
-      # file['season'] = file['release date (us)'].apply(lambda x: get_season(x))
-      # one_hot_encoded = pd.get_dummies(file['season'], prefix='').astype(int)
-      # file = pd.concat([file, one_hot_encoded], axis=1)
-      # file = file.drop(['season'], axis=1)
-      # Nominalize the 'release date (us)' column
-      file['release date (us)'] = file['release date (us)'].map(monthMapping)
-      one_hot_encoded = pd.get_dummies(file['release date (us)'], prefix='').astype(int)
+      file['season'] = file['release date (us)'].apply(lambda x: get_season(x))
+      one_hot_encoded = pd.get_dummies(file['season'], prefix='').astype(int)
       file = pd.concat([file, one_hot_encoded], axis=1)
+      file = file.drop(['season'], axis=1)
+      # Nominalize the 'release date (us)' column
+      # file['release date (us)'] = file['release date (us)'].map(monthMapping)
+      # one_hot_encoded = pd.get_dummies(file['release date (us)'], prefix='').astype(int)
+      # file = pd.concat([file, one_hot_encoded], axis=1)
       file=dropUseless(file,['release date (us)'])
     except:
       raise RuntimeError(f'{colors.RED}A problem occured while one-hot encoding dates{colors.END}')
@@ -172,7 +191,7 @@ def externalGenre(file):
   ia=IMDb()
   try:
     for index,row in file.iterrows():
-      if pd.isna(row['genre']):
+      if pd.isna(row['genre']) and 'genre' not in USELESS_COL:
         movies = ia.search_movie(row['film'])
         if movies:
             movie = ia.get_movie(movies[0].movieID)
@@ -196,13 +215,14 @@ def stringMissingValues(file):
       if len(ALL_NUMERIC)==0:
         print(f'{colors.GREEN}NO STRING COLUMNS TO BE PROCESSED.SUCCESFULLY COMPLETED{colors.END}')
         return file
-    file=externalGenre(file)
+    # file=externalGenre(file)
     for index, row in file.iterrows():
         if 'oscar winners' in file.columns:
           if (pd.isna(row['oscar winners'])):
             file.loc[index, 'oscar winners'] = 0
           else:
             file.loc[index, 'oscar winners'] = 1
+    file['oscar winners']=pd.to_numeric(file['oscar winners'], errors='coerce')
     for j in NO_TRAGET_STRINGS:
       if file[j].isnull().any():
         file[j]=file[j].ffill()
@@ -279,8 +299,8 @@ def columnDataFormating(file):
     raise RuntimeError(f'{colors.RED}A problem occured while converting precentages to decimal.{colors.END}')
   try:
     file[ALL_NUMERIC] = file[ALL_NUMERIC].replace(',', '', regex=True).apply(pd.to_numeric, errors='coerce')
-    file['budget ($million)'] = file['budget ($million)'] * 1000000
-    file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
+    # file['budget ($million)'] = file['budget ($million)'] * 1000000
+    # file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
     # if 'oscar detail' not in USELESS_COL:
     #   file['oscar detail'] = file['oscar detail'].str.split('(', n=1).str[0].str.strip()
   except:
@@ -325,19 +345,19 @@ class DataPreprocessor():
     # # subset = df[['rotten tomatoes critics',	'metacritic critics','average critics']]
     # # subset = df[['rotten tomatoes audience','metacritic audience','average audience']]
     # getCorrelation(subset)
-    df=dropUseless(df,USELESS_COL) # DELETE USELESS COLUMNS
     df=columnDataFormating(df)
+    df=dropUseless(df,USELESS_COL) # DELETE USELESS COLUMNS
     df=numericMissingValues(df) # RETRIEVE MISSING VALUES
     df=stringMissingValues(df) # RETRIEVE MISSING VALUES
     df=columnDataFormating(df)
     df=oneHotEncoding(df) # ONE HOT ENCODING
     df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
-    df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
+    df=dropUseless(df,['film']) # DELETE USELESS COLUMNS
     if type=='normalisation':
       df=normalization(df)
     elif type=='scaling':
       df=scaling(df)
-    df.to_excel(self.cloneProcessedFile)
+    df.to_excel(self.cloneProcessedFile,index=False)
     print(f"------------------------PRE-PROCESSING-FINISHED-------------------------\n")
     return df
 
