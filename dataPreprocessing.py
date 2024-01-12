@@ -11,28 +11,25 @@ ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average c
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TARGET_STRINGS=['oscar winner','oscar detail']
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-# USELESS_COL=['imdb vs diaprity','oscar detail','primary genre','genre','opening weekend ($million)',
-#     'budget recovered opening weekend',
-#     'rotten tomatoes vs metacritic deviance',
-#     'worldwide gross',
-#     'imdb vs rt disparity',
-#     'foreign gross ($million)',
-#     'average audience',
-#     'distributor',
-#     'worldwide gross ($million)',
-#     'domestic gross ($million)',
-#     'script type']
-# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','script type','release date (us)','foreign gross','domestic gross'] #this is good gives 13 aces
-# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','script type','release date (us)','worldwide gross'] #this is good gives 15 aces better predictions
-USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','script type','release date (us)','worldwide gross','genre'] #this is good gives 13 aces better predictions
-
-
-
-# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','genre','script type','release date (us)','worldwide gross'] #this is good gives 15 aces better predictions
-# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail','genre','script type','release date (us)','foreign gross','domestic gross','budget ($million)'] #this is good gives 25 aces
-# # USELESS_COL=['distributor','oscar detail','opening weekend','domestic gross','foreign gross','worldwide gross','genre','primary genre','script type','release date (us)','imdb vs rt disparity']
-# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar details','genre']
-
+USELESS_COL=['imdb vs diaprity',
+    'oscar detail',
+    'primary genre',
+    'genre',
+    'opening weekend ($million)',
+    'budget recovered opening weekend',
+    'rotten tomatoes vs metacritic deviance',
+    'imdb vs rt disparity',
+    'average audience',
+    'distributor',
+    # 'worldwide gross',
+    'foreign gross',
+    'worldwide gross',
+    'worldwide gross ($million)',
+    'foreign gross ($million)',
+    'domestic gross ($million)',
+    'script type',
+    'release date (us)']
+# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail']
 class colors:
     RED = '\033[91m'
     GREEN = '\033[92m'

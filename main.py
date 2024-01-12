@@ -82,7 +82,7 @@ imputer = SimpleImputer(strategy='mean')
 if trainData.shape[1]==predictData.shape[1]:
   sum=0
   for i in range(1):
-    X_train, X_valid, y_train, y_valid = train_test_split(trainData,trainTarget, test_size=0.25,random_state=42)
+    X_train, X_valid, y_train, y_valid = train_test_split(trainData,trainTarget, test_size=0.3,random_state=42)
 
     # Train a machine learning model (e.g., RandomForestClassifier)
     # model = RandomForestClassifier(random_state=42) #recall 0.17, f1-score 0.29 acc=0.94 ill defined
