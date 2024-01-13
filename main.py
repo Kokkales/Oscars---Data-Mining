@@ -64,10 +64,9 @@ def fixTestFile(train_file,test_file):
 
 
 scaler = MinMaxScaler()
-# dp=DataPreprocessor("Book.xlsx","trained_final.xlsx")
+# dp=DataPreprocessor("./movies_test _anon.xlsx","test_final.xlsx")
 # trainDataset=dp.executePreprocess()#options: normalization, scaling
 trainDataset=pd.read_excel('test.xlsx', sheet_name = 'Sheet1') #dates four give s better results
-datasetColumns=trainDataset.columns
 trainTarget,trainData=seperateData(trainDataset)
 trainData=trainData.sort_index(axis=1)
 scaledTrainDataset=scaler.fit_transform(trainData)

@@ -9,31 +9,37 @@ import re
 
 ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)','foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
-TARGET_STRINGS=['oscar winner','oscar detail']
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-USELESS_COL=['imdb vs diaprity',
-    'oscar detail',
-    'primary genre',
-    'genre',
-    'opening weekend ($million)',
-    'budget recovered opening weekend',
-    'rotten tomatoes vs metacritic deviance',
-    'imdb vs rt disparity',
-    # 'average audience',
-    'distributor',
-    'worldwide gross',
-    # 'foreign gross',
-    # 'worldwide gross',
-    'worldwide gross ($million)',
-    'foreign gross ($million)',
-    'domestic gross ($million)',
-    'script type',
-    'release date (us)',
-    'rotten tomatoes audience',
-    'audience vs critics deviance'
-    # 'metacritic audience'
-    ]
-# USELESS_COL=['rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity','oscar detail']
+# USELESS_COL=[
+#   'id',
+#   'imdb vs rt disparity',
+#     'oscar detail',
+#     'primary genre',
+#     'genre',
+#     'opening weekend ($million)',
+#     'budget recovered opening weekend',
+#     'rotten tomatoes vs metacritic deviance',
+#     'imdb vs rt disparity',
+#     # 'average audience',
+#     'distributor',
+#     'worldwide gross',
+#     # 'foreign gross',
+#     # 'worldwide gross',
+#     'worldwide gross ($million)',
+#     'foreign gross ($million)',
+#     'domestic gross ($million)',
+#     'script type',
+#     'release date (us)',
+#     'rotten tomatoes audience',
+#     'audience vs critics deviance'
+#     # 'metacritic audience'
+#     ]
+
+USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre']
+
+
+
+
 class colors:
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -91,23 +97,10 @@ def oneHotEncoding(file):
   # DATE
   if 'release date (us)' in file.columns:
     try:
+      file['release date (us)'] = file['release date (us)'].replace(r'\([^)]*\)', '', regex=True)
+      file['release date (us)'] = file['release date (us)'].str.extract(r'(\b\w{3}\s\d{1,2},\s\d{4}\b)')
       file['release date (us)'] = pd.to_datetime(file['release date (us)'],format='mixed')
-      # Extract month and day
-      file['release date (us)'] = file['release date (us)'].dt.strftime('%m').astype(int)
-      monthMapping = {
-        1: 'january',
-        2: 'february',
-        3: 'march',
-        4: 'april',
-        5: 'may',
-        6: 'june',
-        7: 'july',
-        8: 'august',
-        9: 'september',
-        10: 'october',
-        11: 'november',
-        12: 'december'
-    }
+
       def get_season(month):
         if month in [12, 1, 2]:
             return 'winter'
@@ -122,10 +115,6 @@ def oneHotEncoding(file):
       one_hot_encoded = pd.get_dummies(file['season'], prefix='').astype(int)
       file = pd.concat([file, one_hot_encoded], axis=1)
       file = file.drop(['season'], axis=1)
-      # Nominalize the 'release date (us)' column
-      # file['release date (us)'] = file['release date (us)'].map(monthMapping)
-      # one_hot_encoded = pd.get_dummies(file['release date (us)'], prefix='').astype(int)
-      # file = pd.concat([file, one_hot_encoded], axis=1)
       file=dropUseless(file,['release date (us)'])
     except:
       raise RuntimeError(f'{colors.RED}A problem occured while one-hot encoding dates{colors.END}')
@@ -135,6 +124,7 @@ def oneHotEncoding(file):
   return file
 
 def dropUseless(file,uselessColumns):
+  # print(file.columns)
   try:
     for item in uselessColumns:
       if item not in file.columns:
@@ -217,13 +207,13 @@ def stringMissingValues(file):
         print(f'{colors.GREEN}NO STRING COLUMNS TO BE PROCESSED.SUCCESFULLY COMPLETED{colors.END}')
         return file
     # file=externalGenre(file)
-    for index, row in file.iterrows():
-        if 'oscar winners' in file.columns:
-          if (pd.isna(row['oscar winners'])):
-            file.loc[index, 'oscar winners'] = 0
-          else:
-            file.loc[index, 'oscar winners'] = 1
-    file['oscar winners']=pd.to_numeric(file['oscar winners'], errors='coerce')
+    if 'oscar winners' in file.columns:
+      for index, row in file.iterrows():
+        if (pd.isna(row['oscar winners'])):
+          file.loc[index, 'oscar winners'] = 0
+        else:
+          file.loc[index, 'oscar winners'] = 1
+      file['oscar winners']=pd.to_numeric(file['oscar winners'], errors='coerce')
     for j in NO_TRAGET_STRINGS:
       if file[j].isnull().any():
         file[j]=file[j].ffill()
@@ -339,7 +329,7 @@ class DataPreprocessor():
         self.cloneProcessedFile = cloneProcessedFile
 
   # DATA PREPROCESSING
-  def executePreprocess(self,type=None):
+  def executePreprocess(self,predict=False):
     df=initDataframe(self.fileToProcess)
     # subset = df[['budget ($million)', 'budget recovered', 'budget recovered opening weekend']]
     # # subset = df[['rotten tomatoes critics',	'metacritic critics','average critics']]
@@ -351,18 +341,15 @@ class DataPreprocessor():
     df=stringMissingValues(df) # RETRIEVE MISSING VALUES
     df=columnDataFormating(df)
     df=oneHotEncoding(df) # ONE HOT ENCODING
-    df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
+    if predict!=True:
+      df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
     df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
-    if type=='normalisation':
-      df=normalization(df)
-    elif type=='scaling':
-      df=scaling(df)
-    df.to_excel(self.cloneProcessedFile,index=False)
+    df.to_excel(self.cloneProcessedFile, index=False)
     print(f"------------------------PRE-PROCESSING-FINISHED-------------------------\n")
     return df
 
 if __name__=='__main__':
-  dp=DataPreprocessor("./moviesUpdated.xlsx","test.xlsx")
+  dp=DataPreprocessor("./movies_test _anon_sample.xlsx","to_predict_final.xlsx")
   dataset=dp.executePreprocess()
   if dataset.isna().any().any():
     print("DataFrame contains NaN values.")
