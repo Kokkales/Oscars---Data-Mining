@@ -70,15 +70,15 @@ PREDICT_PATH="./movies_test _anon.xlsx"
 PREDICT_PATH_PROCESSED="./test_sample.xlsx"
 def preprocess():
     # # preprocess all files with MinMax Scaler#
-    dp=DataPreprocessor(TRAIN_PATH,TRAIN_PATH_PROCESSED)
-    df=DataPreprocessor(PREDICT_PATH,PREDICT_PATH_PROCESSED)
-    # # df=DataPreprocessor("./movies_test _anon_sample.xlsx","test_final.xlsx")
-    trainDataset=dp.executePreprocess()
-    predictDataset=df.executePreprocess(predict=True)#options: predict=True/False
+    # dp=DataPreprocessor(TRAIN_PATH,TRAIN_PATH_PROCESSED)
+    # df=DataPreprocessor(PREDICT_PATH,PREDICT_PATH_PROCESSED)
+    # # # df=DataPreprocessor("./movies_test _anon_sample.xlsx","test_final.xlsx")
+    # trainDataset=dp.executePreprocess()
+    # predictDataset=df.executePreprocess(predict=True)#options: predict=True/False
 
     # SAVING TIME-------------------
-    # trainDataset=pd.read_excel(TRAIN_PATH_PROCESSED, sheet_name = 'Sheet1')
-    # predictDataset=pd.read_excel(PREDICT_PATH_PROCESSED, sheet_name = 'Sheet1')
+    trainDataset=pd.read_excel(TRAIN_PATH_PROCESSED, sheet_name = 'Sheet1')
+    predictDataset=pd.read_excel(PREDICT_PATH_PROCESSED, sheet_name = 'Sheet1')
     print('all files has been succesfully preprocessed')
     return trainDataset,predictDataset
 
@@ -94,11 +94,11 @@ scaledPredictData=scaler.transform(predictData)
 # Train the model
 X_train, X_valid, y_train, y_valid = train_test_split(scaledTrainData,trainTarget, test_size=0.25,random_state=42)
 # model = RandomForestClassifier(random_state=42) #recall 0.17, f1-score 0.29 acc=0.94 ill defined
-model = LogisticRegression(max_iter=1500, random_state=42)
+# model = LogisticRegression(max_iter=1500, random_state=42)
 # model = DecisionTreeRegressor(random_state=42) #recall 0.28, f1-score 0.34, acc=0.92
 # model = DecisionTreeClassifier(random_state=42)#recall 0.28, f1-score 0.33, acc=0.92
 # model=SVC()# ill defined
-# model=KNeighborsClassifier(n_neighbors=3) # ill defined
+model=KNeighborsClassifier(n_neighbors=3) # ill defined
 # model=GaussianNB() # ill defined
 # model= MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=42) #ill defined
 
