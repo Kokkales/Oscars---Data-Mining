@@ -33,39 +33,111 @@ TYPES=['adaptation','original','based on a true story','sequel','remake']
 #     'rotten tomatoes audience',
 #     'audience vs critics deviance'
 #     # 'metacritic audience'
-#     ]
+#     ] # KAKO
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre'] # 2 out of 2 winners  recall 70
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type']
+# # 2 out of 2 winners  recall 70 KAKO
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)'] # 3 out of 3
+# PCA
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','release date (us)', 'rotten tomatoes vs metacritic deviance', 'foreign gross', 'budget ($million)', 'budget recovered opening weekend', 'foreign gross ($million)', 'budget recovered', 'of gross earned abroad'] #OK
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)'] # 18 winners
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross'] #6 winners
+USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','release date (us)','foreign gross ($million)', 'of gross earned abroad', 'foreign gross', 'budget recovered opening weekend', 'budget recovered', 'rotten tomatoes vs metacritic deviance', 'budget ($million)','script type']
+# winners 6
+# recall 60
+# Accuracy 94
+# Cross Validation -0.63
+# 3 out of 5 winners recall 55 OK
+
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)']
+# # winners 18
+# # recall 68
+# # Accuracy 95
+# # Cross Validation 0.94 KAKO
+
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)']
+# # winners 18
+# # recall 68
+# # Accuracy 95
+# # Cross Validation 0.94 KAKO
+
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross']
+# # winners 6
+# # recall 68
+# # Accuracy 95
+# # Cross Validation 0.94 KAKO
 
 # USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','genre'] #22 winners
+# # winners 22
+# # recall 74
+# # Accuracy 95
+# # Cross Validation 94 KAKO
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)'] # 2 out of 2 winners
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)']
+# # winners 2
+# # recall 68
+# # Accuracy 95
+# # Cross Validation 93 NOMINATE
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','genre'] # 2 corerct out of 12 winners 74 recall
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','genre']
+# # winners 2
+# # recall 74
+# # Accuracy 95
+# # Cross Validation 94 KAKO
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','rotten tomatoes critics'] # 13 winners recall 68
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','rotten tomatoes critics']
+# # winners 13
+# # recall 68
+# # Accuracy 95
+# # Cross Validation 94 KAKO
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience'] # 6 winners recall 68
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience']
+# # winners 6
+# # recall 68
+# # Accuracy 95
+# # Cross Validation 94 KAKO
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre'] #13 winners recall 74
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre']
+# # winners 13
+# # recall 74
+# # Accuracy 95
+# # Cross Validation 95 KAKO
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type'] #6 winners recall 74
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type']
+# # winners 6
+# # recall 74
+# # Accuracy 97
+# # Cross Validation 93 KAKO
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)'] # 16 winners recall 74
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)']
+# # winners 16
+# # recall 74
+# # Accuracy 97
+# # Cross Validation 95  KAKO
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend'] # 6 winners recall 74
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend']
+# # winners 6
+# # recall 74
+# # Accuracy 97
+# # Cross Validation 94
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics'] # 6 winners recall 74
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics']
+# # winners 6
+# # recall 74
+# # Accuracy 96
+# # Cross Validation 94
 
 # USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','foreign gross'] # 2 out of 2 winners recall 74
+# # winners 2
+# # recall 74
+# # Accuracy 96
+# # Cross Validation 94 - NOMINATE
 
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','foreign gross','rotten tomatoes audience'] # 10 winners recall 75
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','foreign gross','rotten tomatoes audience']
+# # winners 12
+# # recall 74
+# # Accuracy 97
+# # Cross Validation 95
 
 
 

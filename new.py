@@ -24,6 +24,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import recall_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.model_selection import cross_val_score
 import math
 import subprocess
 from xgboost import XGBClassifier
@@ -65,7 +66,7 @@ def fixTestFile(train_file,test_file):
 
 TRAIN_PATH="./moviesUpdated.xlsx"
 TRAIN_PATH_PROCESSED="./trainSet.xlsx"
-PREDICT_PATH="./movies_test _anon_sample.xlsx"
+PREDICT_PATH="./movies_test _anon.xlsx"
 PREDICT_PATH_PROCESSED="./test_sample.xlsx"
 def preprocess():
     # # preprocess all files with MinMax Scaler#
@@ -91,10 +92,10 @@ scaledTrainData=scaler.fit_transform(trainData)
 scaledPredictData=scaler.transform(predictData)
 
 # Train the model
-X_train, X_valid, y_train, y_valid = train_test_split(scaledTrainData,trainTarget, test_size=0.3,random_state=42)
+X_train, X_valid, y_train, y_valid = train_test_split(scaledTrainData,trainTarget, test_size=0.25,random_state=42)
 # model = RandomForestClassifier(random_state=42) #recall 0.17, f1-score 0.29 acc=0.94 ill defined
-# model = LogisticRegression(max_iter=1500, random_state=42)
-model = DecisionTreeRegressor(random_state=42) #recall 0.28, f1-score 0.34, acc=0.92
+model = LogisticRegression(max_iter=1500, random_state=42)
+# model = DecisionTreeRegressor(random_state=42) #recall 0.28, f1-score 0.34, acc=0.92
 # model = DecisionTreeClassifier(random_state=42)#recall 0.28, f1-score 0.33, acc=0.92
 # model=SVC()# ill defined
 # model=KNeighborsClassifier(n_neighbors=3) # ill defined
@@ -109,23 +110,25 @@ accuracy = accuracy_score(y_valid, y_pred)
 conf_matrix = confusion_matrix(y_valid, y_pred)
 print("Confusion Matrix:\n", conf_matrix)
 class_report = classification_report(y_valid, y_pred)
+class_rep = classification_report(y_valid, y_pred)
+cv_scores = cross_val_score(model, scaledTrainData, trainTarget, cv=5)
 print("Classification Report:\n", class_report)
 print(f'Accuracy on the validation set: {accuracy}')
-class_rep = classification_report(y_valid, y_pred)
+print(f'Cross validation: {np.mean(cv_scores)}')
 # --------------------------------------------------------------------------------------------
-feature_importances = model.feature_importances_
+# feature_importances = model.feature_importances_
 
-# Create a DataFrame to display features and their importance scores
-feature_importance_df = pd.DataFrame({'Feature': trainData.columns, 'Importance': feature_importances})
+# # Create a DataFrame to display features and their importance scores
+# feature_importance_df = pd.DataFrame({'Feature': trainData.columns, 'Importance': feature_importances})
 
-# Sort the DataFrame by importance scores in descending order
-feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
+# # Sort the DataFrame by importance scores in descending order
+# feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
 
-# Select the top 10 features
-top_10_features = feature_importance_df.head
+# # Select the top 10 features
+# top_10_features = feature_importance_df.head
 
-# Display the top 10 features
-print(top_10_features)
+# # Display the top 10 features
+# print(top_10_features)
 
 
 # Predict in the model
