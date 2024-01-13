@@ -3,7 +3,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 # Assuming 'file' is your DataFrame
-file = pd.read_excel('./datesFour.xlsx', sheet_name='Sheet1')
+file = pd.read_excel('./test_sample.xlsx', sheet_name='Sheet1')
 
 def separateData(ds):
     target = ds['oscar winners']
