@@ -5,59 +5,13 @@ from sklearn.preprocessing import MinMaxScaler
 from textblob import Word
 from imdb import IMDb
 import re
-
+import sys
 
 ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)','foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-
-# 7
-# PCA
-USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','release date (us)', 'rotten tomatoes vs metacritic deviance', 'foreign gross', 'budget ($million)', 'budget recovered opening weekend', 'foreign gross ($million)', 'budget recovered', 'of gross earned abroad'] #OK with tree regressor
-
-# # 6
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','release date (us)','foreign gross ($million)', 'of gross earned abroad', 'foreign gross', 'budget recovered opening weekend', 'budget recovered', 'rotten tomatoes vs metacritic deviance', 'budget ($million)','script type']
-# # winners 6
-# # recall 60
-# # Accuracy 94
-# # Cross Validation -0.63
-# # 3 out of 5 winners recall 55 good KNN
-
-# # 5
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)']
-# # winners 2
-# # recall 68
-# # Accuracy 95
-# # Cross Validation 93 NOMINATE with Tree classification/regrressor
-
-# # 4
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend']
-# # winners 6
-# # recall 74
-# # Accuracy 97
-# # Cross Validation 94 good with KNN
-
-# # 3
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics']
-# # winners 6
-# # recall 74
-# # Accuracy 96
-# # Cross Validation 94 GOOD WITH KNN
-
-# 2
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','foreign gross','rotten tomatoes audience']
-# # winners 12
-# # recall 74
-# # Accuracy 97
-# # Cross Validation 95 good with KNN
-
-# # 1
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','foreign gross'] # 2 out of 2 winners recall 74
-# # train 2 winners
-# # recall 74
-# # Accuracy 96
-# # Cross Validation 94 - NOMINATE with tree classification and KNN
-# # test 21 winners
+# between 1,2,3,4
+USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','foreign gross','rotten tomatoes audience']
 
 class colors:
     RED = '\033[91m'
@@ -367,8 +321,18 @@ class DataPreprocessor():
     print(f"------------------------PRE-PROCESSING-FINISHED-------------------------\n")
     return df
 
+
+def handleArgvs():
+    if len(sys.argv) != 2:
+        print("Usage: python3 main.py <file_to_process_path> <processed_file_path>")
+        sys.exit(1)
+    argOne=sys.argv[1]
+    argTwo=sys.argv[2]
+    return argOne,argTwo
+
 if __name__=='__main__':
-  dp=DataPreprocessor("./movies_test _anon_sample.xlsx","to_predict_final.xlsx")
+  argOne,argTwo=handleArgvs()
+  dp=DataPreprocessor(argOne,argTwo)
   dataset=dp.executePreprocess()
   if dataset.isna().any().any():
     print("DataFrame contains NaN values.")

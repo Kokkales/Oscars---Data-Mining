@@ -1,43 +1,31 @@
-from dataPreprocessing import DataPreprocessor
-from classifications import Classificationer
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
-import seaborn as sns
 import numpy as np
-import scipy as sc
 import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report
-from sklearn.svm import SVC
+from dataPreprocessing import DataPreprocessor
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import SGDClassifier
-from sklearn.metrics import recall_score
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.ensemble import GradientBoostingClassifier
-import math
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.model_selection import train_test_split, cross_val_score
 import subprocess
-from xgboost import XGBClassifier
+import sys
+
+
+TRAIN_PATH="./Data/moviesUpdated.xlsx"
+TRAIN_PATH_PROCESSED="./Data/moviesUpdated_processed.xlsx"
+PREDICT_PATH="./Data/movies_test _anon.xlsx"
+PREDICT_PATH_PROCESSED="./Data/movies_test_anon_processed.xlsx"
+PREDICTIONS_PATH_XL='./Data/predictions.xlsx'
+PREDICTIONS_PATH_CSV='./Data/predictions.csv'
 
 def seperateData(ds):
   if 'oscar winners' not in ds.columns:
     raise ValueError('Oscar winners not in the dataset')
   target=ds['oscar winners']
-  col=[]
   data=ds.drop(columns='oscar winners')
-  # for feature in ds.columns:
-  #   if feature!='oscar winners':
-  #     col.append(feature)
-  # data=ds[col]
+  data=data.sort_index(axis=1)
   return (target,data)
 
 def fixTestFile(train_file,test_file):
@@ -58,129 +46,92 @@ def fixTestFile(train_file,test_file):
   test_file = test_file.loc[:, ~test_file.columns.duplicated(keep='first')]
   test_file = test_file.drop(columns= set(test_file.columns) - set(train_file.columns))
 
-  test_file.to_excel('edited_final.xlsx')
+  test_file.to_excel(PREDICT_PATH_PROCESSED)
   # print(train_file.shape,test_file.shape)
   return test_file.sort_index(axis=1)
 
+def preprocess(command='prepro'):
+    if command=='prepro':
+        dp=DataPreprocessor(TRAIN_PATH,TRAIN_PATH_PROCESSED)
+        df=DataPreprocessor(PREDICT_PATH,PREDICT_PATH_PROCESSED)
+        trainDataset=dp.executePreprocess()
+        predictDataset=df.executePreprocess(predict=True)#options: predict=True/False
+    else:
+        # SAVING TIME-------------------
+        trainDataset=pd.read_excel(TRAIN_PATH_PROCESSED, sheet_name = 'Sheet1')
+        predictDataset=pd.read_excel(PREDICT_PATH_PROCESSED, sheet_name = 'Sheet1')
+    print('all files has been succesfully preprocessed')
+    return trainDataset,predictDataset
 
-scaler = MinMaxScaler()
-# dp=DataPreprocessor("./movies_test _anon.xlsx","test_final.xlsx")
-# trainDataset=dp.executePreprocess()#options: normalization, scaling
-trainDataset=pd.read_excel('test.xlsx', sheet_name = 'Sheet1') #dates four give s better results
-trainTarget,trainData=seperateData(trainDataset)
-trainData=trainData.sort_index(axis=1)
-scaledTrainDataset=scaler.fit_transform(trainData)
-# --------------------------------------------------------------
-# df=DataPreprocessor("./movies_test _anon_sample.xlsx","to_predict_final.xlsx")
-# predictDataset=df.executePreprocess(deleteDuplicateNames=False)#options: normalization, scaling
-predictDataset=pd.read_excel('to_predict_final.xlsx', sheet_name = 'Sheet1') #dates four give s better results
-predictData=fixTestFile(trainData,predictDataset)
-scaledPredictData=scaler.transform(predictData)
-
-imputer = SimpleImputer(strategy='mean')
-if trainData.shape[1]==predictData.shape[1]:
-  sum=0
-  for i in range(1):
-    X_train, X_valid, y_train, y_valid = train_test_split(trainData,trainTarget, test_size=0.3,random_state=42)
-
-    # Train a machine learning model (e.g., RandomForestClassifier)
-    # model = RandomForestClassifier(random_state=42) #recall 0.17, f1-score 0.29 acc=0.94 ill defined
-    # model = LogisticRegression(max_iter=1500, random_state=42)
-    # model = DecisionTreeRegressor(random_state=42) #recall 0.28, f1-score 0.34, acc=0.92
-    model = DecisionTreeClassifier(random_state=42)#recall 0.28, f1-score 0.33, acc=0.92
-    # model = GradientBoostingClassifier(random_state=42)
-
-    # model = XGBClassifier(random_state=42)
-    # model= MLPClassifier(hidden_layer_sizes=(100,), max_iter=1000, random_state=42) #ill defined
-    # model=SVC()# ill defined
-    # model=KNeighborsClassifier(n_neighbors=3) # ill defined
-    # model=LogisticRegression(random_state=42) # ill defined
-    # model=GaussianNB() # ill defined
-    # model= SGDClassifier(loss='hinge', alpha=0.0001, max_iter=1000, random_state=42) # ill defined
-
-    model.fit(X_train, y_train)
-
-    # --------------------------------------------------------------------------------------------
-    feature_importances = model.feature_importances_
-
-    # Create a DataFrame to display features and their importance scores
-    feature_importance_df = pd.DataFrame({'Feature': trainData.columns, 'Importance': feature_importances})
-
-    # Sort the DataFrame by importance scores in descending order
-    feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
-
-    # Select the top 10 features
-    top_10_features = feature_importance_df.head
-
-    # Display the top 10 features
-    print(top_10_features)
-    # --------------------------------------------------------------------------------------------
-    # Make predictions on the validation set
-    y_pred = model.predict(X_valid)
-
-    # Evaluate the model on the validation set
+def printStats(model,y_valid,y_pred,scaledTrainData,trainTarget):
     accuracy = accuracy_score(y_valid, y_pred)
-
     conf_matrix = confusion_matrix(y_valid, y_pred)
-    print("Confusion Matrix:\n", conf_matrix)
     class_report = classification_report(y_valid, y_pred)
+    cv_scores = cross_val_score(model, scaledTrainData, trainTarget, cv=5)
+    print("Confusion Matrix:\n", conf_matrix)
     print("Classification Report:\n", class_report)
-    print(f'Accuracy on the validation set: {accuracy}')
-    class_rep = classification_report(y_valid, y_pred)
+    print(f'Accuracy: {accuracy}')
+    print(f'Cross validation: {np.mean(cv_scores)}')
 
-    sum =sum+ recall_score(y_valid, y_pred)
+def featureImportances(model,trainData):
+    feature_importances = model.feature_importances_
+    feature_importance_df = pd.DataFrame({'Feature': trainData.columns, 'Importance': feature_importances})
+    feature_importance_df = feature_importance_df.sort_values(by='Importance', ascending=False)
+    top_10_features = feature_importance_df.head
+    print(top_10_features)
 
-  print(f"Average Recall: {sum/1}")
-  predictions = model.predict(predictData)
-  predictData['predictions'] = predictions
-  predictData['id'] = range(1, len(predictData) + 1)
-  results=predictData[['id','predictions']]
-  results.to_excel('predictionsFour.xlsx', index=False)
-  results.to_csv('predictionsFour.csv', index=False)
-  # print(results.head())
-  subprocess.Popen(['start','excel','predictionsFour.xlsx'],shell=True)
+# Scale data
+def scaleData(trainData,predictData):
+    scaler=MinMaxScaler()
+    scaledTrainData=scaler.fit_transform(trainData)
+    scaledPredictData=scaler.transform(predictData)
+    return scaledTrainData,scaledPredictData
 
+def doPredictions(model,scaledPredictData,predictData):
+    predictions = model.predict(scaledPredictData)
+    count_ones = np.count_nonzero(predictions == 1.0)
+    scaledPredictData=pd.DataFrame(scaledPredictData,columns=predictData.columns)
+    scaledPredictData['predictions'] = predictions
+    scaledPredictData['id'] = range(1, len(scaledPredictData) + 1)
+    results=scaledPredictData[['id','predictions']]
+    results.to_excel(PREDICTIONS_PATH_XL, index=False)
+    results.to_csv(PREDICTIONS_PATH_CSV, index=False)
+    print("#Oscar winners: ", count_ones)
+    # subprocess.Popen(['start','excel','./Data/predictions.xlsx'],shell=True)
 
+def doTraining(scaledTrainData,trainTarget,modelName='knn'):
+    X_train, X_valid, y_train, y_valid = train_test_split(scaledTrainData,trainTarget, test_size=0.25,random_state=42)
+    if modelName=='rf':
+        model = RandomForestClassifier(random_state=42)
+    elif modelName=='lr':
+        model = LogisticRegression(max_iter=1500, random_state=42)
+    elif modelName=='dtc':
+        model = DecisionTreeClassifier(random_state=42)
+    elif modelName=='knn':
+        model=KNeighborsClassifier(n_neighbors=3)
+    model.fit(X_train, y_train)
+    return model,X_train,X_valid, y_train, y_valid
 
+def handleArgvs():
+    if len(sys.argv) != 4:
+        print("Usage: python3 main.py <rf/knn/lr/dtc> <stats/nostats> <prepro/noprepro>")
+        sys.exit(1)
+    argOne=sys.argv[1]
+    argTwo=sys.argv[2]
+    argThree=sys.argv[3]
+    return argOne,argTwo,argThree
 
+if __name__=='__main__':
+    argOne,argTwo,argThree=handleArgvs()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  # print("-----------------CLASSIFICATION TRAINING------------------")
-  # # TRAIN THE MODEL
-  # # # Seprate train and test data
-  # X=train_data
-  # y=LabelEncoder().fit_transform(train_target)
-
-  # # PREDICT WITH THE NEW SET OF DATA
-  # scaler = StandardScaler()
-  # X_train = scaler.fit_transform(X)
-  # # X_test = scaler.transform(X_test)
-  # print("-----------------CLASSIFICATION PREDICTING------------------")
-
-  # for i in range(20):
-  # X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.3)
-  # cl=Classificationer(X_train, X_test, y_train, y_test)
-  # # cl=Classificationer()
-  # # print(cl.excecuteDtcClassification())#0.96 NOt suitable (ill defined)
-  # print(cl.executeDtrClassification()) #0.97
-  # print(cl.executeRfClassification())# 0.97
-  # # print(cl.executeKnnClassification()) # 0.77 NOT THE BEST results
-  # # print(cl.executeGpClassification()) # 0.95 NOT the best results
-  # # print(cl.executeSvmClassification()) #0.95 NOT suitable (ill defined)
+    trainDataset,predictDataset=preprocess(argThree)
+    trainTarget,trainData=seperateData(trainDataset) #seperate train from target data of the train dataset
+    predictData=fixTestFile(trainData,predictDataset)
+    scaledTrainData,scaledPredictData=scaleData(trainData,predictData)
+    model,X_train,X_valid,y_train, y_valid=doTraining(scaledTrainData,trainTarget,argOne)
+    y_pred = model.predict(X_valid)
+    if sys.argv[2]=='stats':
+        printStats(model,y_valid,y_pred,scaledTrainData,trainTarget)
+    if sys.argv[1]!='knn' and sys.argv[1]!='lr':
+        featureImportances(model,trainData)
+    doPredictions(model,scaledPredictData,predictData) # Predict in the model
