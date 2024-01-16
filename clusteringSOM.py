@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.cluster import DBSCAN
+from minisom import MiniSom  # You may need to install this package (pip install minisom)
 from sklearn.decomposition import PCA
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix
@@ -26,28 +26,41 @@ dfpca = pd.DataFrame(Xnew, columns=["PC1", "PC2"])
 dfclass = pd.DataFrame(y, columns=['predictions'])
 dfpca = pd.concat([dfpca, dfclass], axis=1)
 
-# Using DBSCAN
-dbscan = DBSCAN(eps=0.5, min_samples=10)
-dbscan_labels = dbscan.fit_predict(Xnew)
+# Adjust the SOM parameters based on your data and requirements
+som_rows = 10
+som_columns = 10
+som_epochs = 100
+som_learning_rate = 0.1
 
-dfcluster = pd.DataFrame(dbscan_labels, columns=['cluster'])
+# Initialize the SOM
+som = MiniSom(som_rows, som_columns, Xnew.shape[1], sigma=1.0, learning_rate=som_learning_rate)
+
+# Train the SOM with the transformed data
+som.train(Xnew, som_epochs, verbose=True)
+
+# Get the SOM cluster labels for each data point
+som_labels = som.labels_map(Xnew)
+
+# Convert the SOM labels to a flat array
+som_flat_labels = []
+for i in range(len(Xnew)):
+    som_flat_labels.append(som_labels[tuple(Xnew[i])])
+
+dfcluster = pd.DataFrame(som_flat_labels, columns=['cluster'])
 dfall = pd.concat([dfpca, dfcluster], axis=1)
 
 print(confusion_matrix(dfall['predictions'], dfall["cluster"]))
 print(metrics.calinski_harabasz_score(Xnew, dfall['cluster']))
 print(metrics.silhouette_score(Xnew, dfall['cluster'], metric='euclidean'))
 
-# Plot the DBSCAN clusters
-unique_labels = set(dbscan_labels)
-for label in unique_labels:
-    cluster_df = dfall[dfall['cluster'] == label]
-    if label == -1:  # outliers (noise) are labeled as -1
-        plt.scatter(cluster_df['PC1'], cluster_df['PC2'], s=50, edgecolors='k', label='Noise')
-    else:
-        plt.scatter(cluster_df['PC1'], cluster_df['PC2'], label=f'Cluster {label + 1}')
+# Plot the SOM clusters
+for i in range(som_rows):
+    for j in range(som_columns):
+        cluster_df = dfall[dfall['cluster'] == (i, j)]
+        plt.plot(cluster_df['PC1'], cluster_df['PC2'], 'o', label=f'SOM Cluster {i}-{j}')
 
 plt.xlabel(dfpca.columns[0])
 plt.ylabel(dfpca.columns[1])
-plt.title('DBSCAN Clustering')
+plt.title('SOM Clustering')
 plt.legend()
 plt.show()
