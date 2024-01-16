@@ -19,6 +19,7 @@ PREDICT_PATH="./Data/movies_test _anon.xlsx"
 PREDICT_PATH_PROCESSED="./Data/movies_test_anon_processed.xlsx"
 PREDICTIONS_PATH_XL='./Data/predictions.xlsx'
 PREDICTIONS_PATH_CSV='./Data/predictions.csv'
+FULL_PREDICTIONS='./Data/full_predictions.xlsx'
 
 def seperateData(ds):
   if 'oscar winners' not in ds.columns:
@@ -92,6 +93,7 @@ def doPredictions(model,scaledPredictData,predictData):
     count_ones = np.count_nonzero(predictions == 1.0)
     scaledPredictData=pd.DataFrame(scaledPredictData,columns=predictData.columns)
     scaledPredictData['predictions'] = predictions
+    scaledPredictData.to_excel(FULL_PREDICTIONS,index=False)
     scaledPredictData['id'] = range(1, len(scaledPredictData) + 1)
     results=scaledPredictData[['id','predictions']]
     results.to_excel(PREDICTIONS_PATH_XL, index=False)
