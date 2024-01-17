@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix, classification_rep
 from sklearn.model_selection import train_test_split, cross_val_score
 import subprocess
 import sys
+import xgboost as xgb
 
 
 TRAIN_PATH="./Data/moviesUpdated.xlsx"
@@ -85,6 +86,7 @@ def featureImportances(model,trainData):
 def scaleData(trainData,predictData):
     scaler=MinMaxScaler()
     scaledTrainData=scaler.fit_transform(trainData)
+
     scaledPredictData=scaler.transform(predictData)
     return scaledTrainData,scaledPredictData
 
@@ -99,6 +101,25 @@ def doPredictions(model,scaledPredictData,predictData):
     results.to_excel(PREDICTIONS_PATH_XL, index=False)
     results.to_csv(PREDICTIONS_PATH_CSV, index=False)
     print("#Oscar winners: ", count_ones)
+    winners_ids = results[results['predictions'] == 1]['id'].tolist()
+    print("Winner IDs:", winners_ids)
+    # TOREMOVE
+    print("==================")
+    sureWinners=[59,101,147,149,308,344,400,406,413,466]
+    winners_set = set(winners_ids)
+    sureWinners_set = set(sureWinners)
+
+    # Find common winner IDs
+    common_winners = winners_set.intersection(sureWinners_set)
+
+    # Find winner IDs not in sureWinners
+    winners_not_in_sureWinners = winners_set.difference(sureWinners_set)
+
+    # Print the results
+    print("Number of winner IDs in sureWinners:", len(common_winners))
+    print("Winner IDs in sureWinners:", common_winners)
+    print("Number of winner IDs not in sureWinners:", len(winners_not_in_sureWinners))
+    print("Winner IDs not in sureWinners:", winners_not_in_sureWinners)
     # subprocess.Popen(['start','excel','./Data/predictions.xlsx'],shell=True)
 
 def doTraining(scaledTrainData,trainTarget,modelName='knn'):
@@ -111,6 +132,8 @@ def doTraining(scaledTrainData,trainTarget,modelName='knn'):
         model = DecisionTreeClassifier(random_state=42)
     elif modelName=='knn':
         model=KNeighborsClassifier(n_neighbors=3)
+    elif modelName=='gb':
+        model=xgb.XGBClassifier()
     model.fit(X_train, y_train)
     return model,X_train,X_valid, y_train, y_valid
 
@@ -136,4 +159,16 @@ if __name__=='__main__':
         printStats(model,y_valid,y_pred,scaledTrainData,trainTarget)
     if sys.argv[1]!='knn' and sys.argv[1]!='lr':
         featureImportances(model,trainData)
+
     doPredictions(model,scaledPredictData,predictData) # Predict in the model
+    df = pd.read_excel(PREDICT_PATH)
+
+    # Find the row where column F has the value 60 and column AB has the value 7.7
+    result = df[(df['year'] == 2021)&(df['metacritic critics'] == 72)]
+
+    # If there are multiple rows meeting the conditions, 'result' will contain all of them.
+    # If you want just the first row, you can use 'result.iloc[0]'
+    if not result.empty:
+        print("Row found:", result)
+    else:
+        print("No matching row found.")

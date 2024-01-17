@@ -6,12 +6,29 @@ from textblob import Word
 from imdb import IMDb
 import re
 import sys
+import subprocess
 
 ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)','foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TYPES=['adaptation','original','based on a true story','sequel','remake']
 # between 1,2,3,4
-USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','foreign gross','rotten tomatoes audience']
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','foreign gross','rotten tomatoes audience']
+# gb: 5 winners out of
+
+
+
+# test
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','rotten tomatoes audience']
+
+
+# test 4 use this to proove my point nope
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','release date (us)']
+
+# removing every column thta has low correlation with oscar winners 12 winners THE BEST SO FAR
+USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','opening weekend']
+# predicting 7 out of 12 with gb
+
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','opening weekend','domestic gross ($million)','worldwide gross ($million)','foreign gross ($million)','opening weekend ($million)','rotten tomatoes vs metacritic deviance','foreign gross','worldwide gross'] # 6 winners out of 11
 
 class colors:
     RED = '\033[91m'
@@ -319,6 +336,13 @@ class DataPreprocessor():
     df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
     df.to_excel(self.cloneProcessedFile, index=False)
     print(f"------------------------PRE-PROCESSING-FINISHED-------------------------\n")
+    if predict!=True:
+      correlation_matrix = df.corr().loc[:, 'oscar winners'].sort_values(ascending=False)
+      # Print or display the correlation matrix
+      print("Correlation Matrix:")
+      print(correlation_matrix)
+      correlation_matrix.to_excel("correlation_matrix.xlsx", index=True)
+      subprocess.Popen(['start','excel','correlation_matrix.xlsx'],shell=True)
     return df
 
 
@@ -334,6 +358,7 @@ if __name__=='__main__':
   argOne,argTwo=handleArgvs()
   dp=DataPreprocessor(argOne,argTwo)
   dataset=dp.executePreprocess()
+
   if dataset.isna().any().any():
     print("DataFrame contains NaN values.")
   else:
