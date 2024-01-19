@@ -12,7 +12,7 @@ ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average c
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TYPES=['adaptation','original','based on a true story','sequel','remake']
 # USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','release date (us)']
-USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','domestic gross ($million)']
+USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','domestic gross ($million)']
 
 class colors:
     RED = '\033[91m'
