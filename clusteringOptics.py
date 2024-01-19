@@ -26,7 +26,7 @@ dfpca = pd.DataFrame(Xnew, columns=["PC1", "PC2"])
 dfclass = pd.DataFrame(y, columns=['predictions'])
 dfpca = pd.concat([dfpca, dfclass], axis=1)
 
-optics_clu = OPTICS()  # Adjust parameters as needed
+optics_clu = OPTICS(n_jobs=10)  # Adjust parameters as needed
 optics_labels = optics_clu.fit_predict(Xnew)
 
 dfcluster = pd.DataFrame(optics_labels, columns=['cluster'])

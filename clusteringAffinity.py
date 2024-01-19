@@ -16,6 +16,13 @@ def separateData(ds):
     data = data.sort_index(axis=1)
     return target, data
 
+def get_rows_with_prediction_one(df):
+    if 'predictions' not in df.columns:
+        raise ValueError('predictions not in the dataframe')
+
+    prediction_one_ids = (df[df['predictions'] == 1].index).tolist()
+    return prediction_one_ids
+
 iris = pd.read_excel(FULL_PREDICTIONS, sheet_name='Sheet1')
 y, X = separateData(iris)
 
@@ -32,9 +39,21 @@ affinity_propagation_labels = affinity_propagation_clu.fit_predict(Xnew)
 dfcluster = pd.DataFrame(affinity_propagation_labels, columns=['cluster'])
 dfall = pd.concat([dfpca, dfcluster], axis=1)
 
+# Print clustering stats
 print(confusion_matrix(dfall['predictions'], dfall["cluster"]))
 print(metrics.calinski_harabasz_score(Xnew, dfall['cluster']))
 print(metrics.silhouette_score(Xnew, dfall['cluster'], metric='euclidean'))
+
+# Print points with prediction equal to 1
+prediction_one_ids = get_rows_with_prediction_one(iris)
+for index, row in dfall.iterrows():
+    point_id = index
+    pc1_value = row['PC1']
+    pc2_value = row['PC2']
+    cluster_label = row['cluster']
+
+    if point_id in prediction_one_ids:
+        print(f"Point ID: {point_id+1}, PC1: {pc1_value}, PC2: {pc2_value}, Cluster: {cluster_label}")
 
 # Plot the Affinity Propagation clusters
 unique_clusters = set(affinity_propagation_labels)

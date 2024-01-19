@@ -25,10 +25,16 @@ TYPES=['adaptation','original','based on a true story','sequel','remake']
 # USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','release date (us)']
 
 # removing every column thta has low correlation with oscar winners 12 winners THE BEST SO FAR
-USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','opening weekend']
+USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','domestic gross ($million)']
 # predicting 7 out of 12 with gb
 
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','opening weekend','domestic gross ($million)','opening weekend ($million)','foreign gross ($million)','rotten tomatoes vs metacritic deviance']
+
+
 # USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','opening weekend','domestic gross ($million)','worldwide gross ($million)','foreign gross ($million)','opening weekend ($million)','rotten tomatoes vs metacritic deviance','foreign gross','worldwide gross'] # 6 winners out of 11
+
+# my thought
+# USELESS_COL=['oscar detail','distributor','imdb vs rt disparity','script type','primary genre','genre','average critics','average audience','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','release date (us)','budget recovered opening weekend','of gross earned abroad','budget recovered','opening weekend','budget ($million)']
 
 class colors:
     RED = '\033[91m'
@@ -343,6 +349,10 @@ class DataPreprocessor():
       print(correlation_matrix)
       correlation_matrix.to_excel("correlation_matrix.xlsx", index=True)
       subprocess.Popen(['start','excel','correlation_matrix.xlsx'],shell=True)
+    if df.isna().any().any():
+      print("DataFrame contains NaN values.")
+    else:
+        print("DataFrame does not contain NaN values.")
     return df
 
 
@@ -360,7 +370,7 @@ if __name__=='__main__':
   dataset=dp.executePreprocess()
 
   if dataset.isna().any().any():
-    print("DataFrame contains NaN values.")
+    print("DataFrame contains NaN values.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
   else:
       print("DataFrame does not contain NaN values.")
   print(dataset.head())

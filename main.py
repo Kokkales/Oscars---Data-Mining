@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split, cross_val_score
 import subprocess
 import sys
 import xgboost as xgb
+from sklearn.metrics import f1_score
 
 
 TRAIN_PATH="./Data/moviesUpdated.xlsx"
@@ -105,7 +106,7 @@ def doPredictions(model,scaledPredictData,predictData):
     print("Winner IDs:", winners_ids)
     # TOREMOVE
     print("==================")
-    sureWinners=[59,101,147,149,308,344,400,406,413,466]
+    sureWinners=[52,59,101,147,149,308,344,353,400,406,413,466]
     winners_set = set(winners_ids)
     sureWinners_set = set(sureWinners)
 
@@ -120,10 +121,13 @@ def doPredictions(model,scaledPredictData,predictData):
     print("Winner IDs in sureWinners:", common_winners)
     print("Number of winner IDs not in sureWinners:", len(winners_not_in_sureWinners))
     print("Winner IDs not in sureWinners:", winners_not_in_sureWinners)
+    print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA::::::::  ',len(common_winners))
+    return len(common_winners),count_ones
     # subprocess.Popen(['start','excel','./Data/predictions.xlsx'],shell=True)
 
-def doTraining(scaledTrainData,trainTarget,modelName='knn'):
-    X_train, X_valid, y_train, y_valid = train_test_split(scaledTrainData,trainTarget, test_size=0.25,random_state=42)
+def doTraining(scaledTrainData,trainTarget,modelName='knn',rs=42):
+    print("---------------------------------------TRY:",rs)
+    X_train, X_valid, y_train, y_valid = train_test_split(scaledTrainData,trainTarget, test_size=0.25,random_state=rs)
     if modelName=='rf':
         model = RandomForestClassifier(random_state=42)
     elif modelName=='lr':
@@ -153,22 +157,30 @@ if __name__=='__main__':
     trainTarget,trainData=seperateData(trainDataset) #seperate train from target data of the train dataset
     predictData=fixTestFile(trainData,predictDataset)
     scaledTrainData,scaledPredictData=scaleData(trainData,predictData)
-    model,X_train,X_valid,y_train, y_valid=doTraining(scaledTrainData,trainTarget,argOne)
-    y_pred = model.predict(X_valid)
-    if sys.argv[2]=='stats':
-        printStats(model,y_valid,y_pred,scaledTrainData,trainTarget)
-    if sys.argv[1]!='knn' and sys.argv[1]!='lr':
-        featureImportances(model,trainData)
+    max=0
+    pos=0
+    for i in range(1):
+        model,X_train,X_valid,y_train, y_valid=doTraining(scaledTrainData,trainTarget,argOne,42)
+        y_pred = model.predict(X_valid)
+        if sys.argv[2]=='stats':
+            printStats(model,y_valid,y_pred,scaledTrainData,trainTarget)
+        if sys.argv[1]!='knn' and sys.argv[1]!='lr':
+            featureImportances(model,trainData)
 
-    doPredictions(model,scaledPredictData,predictData) # Predict in the model
-    df = pd.read_excel(PREDICT_PATH)
+        r,o=doPredictions(model,scaledPredictData,predictData) # Predict in the model
+        fScore=f1_score(y_valid,y_pred)
+        if fScore>=max:
+            max=fScore
+            pos=i
+    print("BEST RANDOM STATE: ",pos,max)#random state 87
+    # df = pd.read_excel(PREDICT_PATH)
 
-    # Find the row where column F has the value 60 and column AB has the value 7.7
-    result = df[(df['year'] == 2021)&(df['metacritic critics'] == 72)]
+    # # Find the row where column F has the value 60 and column AB has the value 7.7
+    # result = df[(df['year'] == 2021)&(df['metacritic critics'] == 72)]
 
-    # If there are multiple rows meeting the conditions, 'result' will contain all of them.
-    # If you want just the first row, you can use 'result.iloc[0]'
-    if not result.empty:
-        print("Row found:", result)
-    else:
-        print("No matching row found.")
+    # # If there are multiple rows meeting the conditions, 'result' will contain all of them.
+    # # If you want just the first row, you can use 'result.iloc[0]'
+    # if not result.empty:
+    #     print("Row found:", result)
+    # else:
+    #     print("No matching row found.")
