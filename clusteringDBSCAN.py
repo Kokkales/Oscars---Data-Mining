@@ -1,4 +1,3 @@
-# ----------------------------------------------------------------------------------TEST 1
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,6 +6,10 @@ from sklearn.cluster import DBSCAN
 from sklearn.decomposition import PCA
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import MinMaxScaler
 
 TRAIN_PATH_PROCESSED = "./Data/moviesUpdated_processed.xlsx"
 FULL_PREDICTIONS = './Data/full_predictions.xlsx'
@@ -16,7 +19,6 @@ def separateData(ds):
         raise ValueError('oscar winners not in the dataset')
     target = ds['oscar winners']
     data = ds.drop(columns='oscar winners')
-    # data = data.sort_index(axis=1)
     return target, data
 
 def get_rows_with_prediction_one(df):
@@ -26,82 +28,89 @@ def get_rows_with_prediction_one(df):
     prediction_one_ids = (df[df['oscar winners'] == 1].index).tolist()
     return prediction_one_ids
 
+if len(sys.argv)!=3:
+    print("Usage: python3 clustering.py <algorithm> <cluster number> <ss/rs/mm>")
+    sys.exit(1)
+
 iris = pd.read_excel(TRAIN_PATH_PROCESSED, sheet_name='Sheet1')
 y, X = separateData(iris)
-
-# Example usage:
-# iris = pd.read_excel(FULL_PREDICTIONS, sheet_name='Sheet1')
 prediction_one_ids = get_rows_with_prediction_one(iris)
 
-print("IDs of rows with prediction equal to 1:")
-print(prediction_one_ids)
+if sys.argv[2]=='ss':
+    scaler = StandardScaler()
+elif sys.argv[2]=='rs':
+    scaler=RobustScaler()
+else:
+    scaler=MinMaxScaler()
+X_scaled = scaler.fit_transform(X)
 
-# Perform PCA
+# Perform PCA on the scaled data
 pca = PCA(n_components=2)
-Xnew = pca.fit_transform(X)
+Xnew = pca.fit_transform(X_scaled)
 feature_names_pc1 = X.columns[np.argsort(pca.components_[0])[::-1]].tolist()
 
-# Perform DBSCAN clustering
-eps_value = float(sys.argv[1])  # You can choose the epsilon value
-min_samples_value = int(sys.argv[2])  # You can choose the min_samples value
-dbscan = DBSCAN(eps=eps_value, min_samples=min_samples_value)
+# Perform DBSCAN clustering on the scaled data
+dbscan = DBSCAN(eps=0.5, min_samples=5)
 dbscan_labels = dbscan.fit_predict(Xnew)
 
-# Check if there is only one cluster (which results in a ValueError for silhouette score)
-unique_labels = np.unique(dbscan_labels)
-if len(unique_labels) == 1:
-    print("DBSCAN resulted in only one cluster. Silhouette score is not applicable.")
-else:
-    # Add cluster labels to your dataframe
-    dfcluster_dbscan = pd.DataFrame(dbscan_labels, columns=['dbscan_cluster'])
-    dfpca = pd.DataFrame(Xnew, columns=["PC1", "PC2"])
-    dfclass = pd.DataFrame(y, columns=['oscar winners'])
-    dfall_dbscan = pd.concat([dfpca, dfclass, dfcluster_dbscan], axis=1)
+# Add cluster labels to your dataframe
+dfcluster_dbscan = pd.DataFrame(dbscan_labels, columns=['dbscan_cluster'])
+dfpca = pd.DataFrame(Xnew, columns=["PC1", "PC2"])
+dfclass = pd.DataFrame(y, columns=['oscar winners'])
+dfall_dbscan = pd.concat([dfpca, dfclass, dfcluster_dbscan], axis=1)
 
-    # Print clustering stats
-    print("Confusion Matrix:")
-    print(confusion_matrix(dfall_dbscan['oscar winners'], dfall_dbscan['dbscan_cluster']))
+# Print clustering stats
+print("Confusion Matrix:")
+print(confusion_matrix(dfall_dbscan['oscar winners'], dfall_dbscan['dbscan_cluster']))
+print("Silhouette Score:", silhouette_score(Xnew, dfall_dbscan['dbscan_cluster'], metric='euclidean'))
 
-    # Silhouette score is not applicable if there is only one cluster
-    if len(unique_labels) > 1:
-        print("Silhouette Score:", metrics.silhouette_score(Xnew, dfall_dbscan['dbscan_cluster'], metric='euclidean'))
+# Explore cluster characteristics (core sample indices and labels)
+core_samples_mask = np.zeros_like(dbscan.labels_, dtype=bool)
+core_samples_mask[dbscan.core_sample_indices_] = True
 
-    # Explore cluster characteristics (no explicit centroids in DBSCAN)
-    # Display top features contributing to each cluster
-    print("Top features contributing to each cluster:")
-    unique_clusters_dbscan = np.unique(dbscan_labels)
-    for i, cluster_id in enumerate(unique_clusters_dbscan):
-        if cluster_id == -1:  # -1 represents noise points in DBSCAN
-            continue
+# Loop through the DBSCAN clusters and print information for points with prediction equal to 1
+pc1_osc=[]
+pc2_osc=[]
+for index, row in dfall_dbscan.iterrows():
+    point_id = index
+    pc1_value = row['PC1']
+    pc2_value = row['PC2']
+    cluster_label = row['dbscan_cluster']
+    if point_id in prediction_one_ids:
+        pc1_osc.append(pc1_value)
+        pc2_osc.append(pc2_value)
+        # print(f"Point ID: {point_id+1}, PC1: {pc1_value}, PC2: {pc2_value}, Cluster: {cluster_label}")
 
-        cluster_df = dfall_dbscan[dfall_dbscan['dbscan_cluster'] == cluster_id]
-        print(f"Cluster {i + 1}:")
+# Plot clusters according to principal components 1 and 2
+fig, axs = plt.subplots(1, 2, figsize=(10, 5))
 
-        # Get the indices of the top features for the current cluster
-        top_features_indices = np.argsort(np.mean(cluster_df[['PC1', 'PC2']].values, axis=0))[::-1][:5]
+# Plot the silhouette score comparing to Fowlkes-Mallows score
+xs = range(2, 50)
+sils = []
+fms = []
 
-        # Get the names of the top features
-        top_features = X.columns[top_features_indices].tolist()
-        print(top_features)
+for i in xs:
+    dbscan = DBSCAN(eps=0.5, min_samples=5)
+    dbscan_labels = dbscan.fit_predict(Xnew)
+    sils.append(silhouette_score(Xnew, dbscan_labels, metric='euclidean'))
+    fms.append(metrics.fowlkes_mallows_score(dfall_dbscan['oscar winners'], dbscan_labels))
+axs[0].plot(xs, sils)
+axs[0].plot(xs, fms)
+axs[0].set_xlabel('Number of clusters (k)')
+axs[0].set_ylabel('Score')
+axs[0].set_title('Silhouette and Fowlkes-Mallows Scores')
+axs[0].legend(['Silhouette', 'Fowlkes-Mallows'])
 
-    # Set up the figure with subplots
-    fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+# Plot clusters according to principal components 1 and 2
+for label in set(dbscan_labels):
+    cluster_df = dfall_dbscan[dfall_dbscan['dbscan_cluster'] == label]
+    axs[1].scatter(cluster_df['PC1'], cluster_df['PC2'], label=f'Cluster {label}')
+axs[1].scatter(pc1_osc, pc2_osc, label=f'Oscars', color='red')
+axs[1].set_xlabel("PC1")
+axs[1].set_ylabel("PC2")
+axs[1].set_title("DBSCAN Clusters in PC1-PC2 Space")
+axs[1].legend()
 
-    # Plot the DBSCAN Clusters in PC1-PC2 Space
-    for i, cluster_id in enumerate(unique_clusters_dbscan):
-        cluster_df = dfall_dbscan[dfall_dbscan['dbscan_cluster'] == cluster_id]
-        if cluster_id == -1:
-            axs[1, 1].scatter(cluster_df['PC1'], cluster_df['PC2'], label=f'Noise Points')
-        else:
-            axs[1, 1].scatter(cluster_df['PC1'], cluster_df['PC2'], label=f'Cluster {i + 1}')
-
-    axs[1, 1].set_xlabel("PC1")
-    axs[1, 1].set_ylabel("PC2")
-    axs[1, 1].set_title("DBSCAN Clusters in PC1-PC2 Space")
-    axs[1, 1].legend()
-
-    # Adjust layout to prevent clipping of titles and labels
-    plt.tight_layout()
-
-    # Show the plot
-    plt.show()
+plt.tight_layout()
+plt.show()
+plt.close()

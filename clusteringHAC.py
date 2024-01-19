@@ -90,6 +90,8 @@ for i in range(num_clusters):
     print(top_features)
 
 # Loop through the HAC clusters and print information for points with prediction equal to 1
+pc1_osc=[]
+pc2_osc=[]
 for index, row in dfall_hac.iterrows():
     point_id = index  # Assuming the index is the ID, you can adjust this based on your dataset
     pc1_value = row['PC1']
@@ -97,7 +99,9 @@ for index, row in dfall_hac.iterrows():
     cluster_label = row['hac_cluster'] + 1
 
     if point_id in prediction_one_ids:
-        print(f"Point ID: {point_id+1}, PC1: {pc1_value}, PC2: {pc2_value}, Cluster: {cluster_label}")
+        pc1_osc.append(pc1_value)
+        pc2_osc.append(pc2_value)
+        # print(f"Point ID: {point_id+1}, PC1: {pc1_value}, PC2: {pc2_value}, Cluster: {cluster_label}")
 
 
 # Set up the figure with subplots
@@ -120,19 +124,6 @@ axs[0, 0].set_xlabel('Number of clusters (k)')
 axs[0, 0].set_ylabel('Score')
 axs[0, 0].set_title('Silhouette and Fowlkes-Mallows Scores')
 axs[0, 0].legend(['Silhouette', 'Fowlkes-Mallows'])
-
-# Plot the elbow curve
-inertias = []
-for i in range(2, 11):
-    hac = AgglomerativeClustering(n_clusters=i)
-    hac_labels = hac.fit_predict(Xnew)
-    inertias.append(metrics.calinski_harabasz_score(Xnew, hac_labels))
-
-axs[0, 1].plot(range(2, 11), inertias, marker='o')
-axs[0, 1].set_xlabel('Number of Clusters')
-axs[0, 1].set_ylabel('Calinski-Harabasz Score')
-axs[0, 1].set_title('Elbow Method')
-
 # Plot silhouette scores
 silhouette_scores = []
 for i in range(2, 11):
@@ -150,7 +141,7 @@ axs[1, 0].set_title('Silhouette Score Method')
 for i in range(num_clusters):
     cluster_df = dfall_hac[dfall_hac['hac_cluster'] == i]
     axs[1, 1].scatter(cluster_df['PC1'], cluster_df['PC2'], label=f'Cluster {i + 1}')
-
+axs[1, 1].scatter(pc1_osc, pc2_osc, label=f'Oscars',color='red')
 axs[1, 1].set_xlabel("PC1")
 axs[1, 1].set_ylabel("PC2")
 axs[1, 1].set_title("HAC Clusters in PC1-PC2 Space")

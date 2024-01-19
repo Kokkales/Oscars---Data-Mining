@@ -11,30 +11,8 @@ import subprocess
 ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)','foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-# between 1,2,3,4
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','foreign gross','rotten tomatoes audience']
-# gb: 5 winners out of
-
-
-
-# test
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','opening weekend ($million)','metacritic audience','genre','script type','release date (us)','opening weekend','average critics','rotten tomatoes audience']
-
-
-# test 4 use this to proove my point nope
 # USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','release date (us)']
-
-# removing every column thta has low correlation with oscar winners 12 winners THE BEST SO FAR
-USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','domestic gross ($million)']
-# predicting 7 out of 12 with gb
-
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','opening weekend','domestic gross ($million)','opening weekend ($million)','foreign gross ($million)','rotten tomatoes vs metacritic deviance']
-
-
-# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','opening weekend','domestic gross ($million)','worldwide gross ($million)','foreign gross ($million)','opening weekend ($million)','rotten tomatoes vs metacritic deviance','foreign gross','worldwide gross'] # 6 winners out of 11
-
-# my thought
-# USELESS_COL=['oscar detail','distributor','imdb vs rt disparity','script type','primary genre','genre','average critics','average audience','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','release date (us)','budget recovered opening weekend','of gross earned abroad','budget recovered','opening weekend','budget ($million)']
+USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','domestic gross ($million)']
 
 class colors:
     RED = '\033[91m'
@@ -136,8 +114,8 @@ def dropUseless(file,uselessColumns):
 def deleteDuplicate(file):
   try:
     if (file.duplicated().sum() != 0) or (not file[file.duplicated(subset=['film'])].empty):
-      print(f'The dataset contains {(file.duplicated(subset=["film"])).sum()} duplicate films that need to be removed.')
-      print(f'The dataset contains {file.duplicated().sum()} duplicate rows that need to be removed.')
+      # print(f'The dataset contains {(file.duplicated(subset=["film"])).sum()} duplicate films that need to be removed.')
+      # print(f'The dataset contains {file.duplicated().sum()} duplicate rows that need to be removed.')
       file.drop_duplicates(inplace=True)
       file = file.drop_duplicates(subset=['film'],keep='first')
   except:
@@ -247,37 +225,6 @@ def numericMissingValues(file): # replacing ',' and missing values with the mean
   print(f"{colors.GREEN}NUMERIC MISSING VALUES HAS BEEN SUCCESFULLY RESTORED!{colors.END}")
   return file
 
-
-def scaling(file):
-  for item in ALL_NUMERIC:
-    if item not in ALL_NUMERIC:
-      ALL_NUMERIC.remove(item)
-      continue
-  if len(ALL_NUMERIC)!=0:
-    try:
-      scaler = StandardScaler()
-      file[ALL_NUMERIC] = scaler.fit_transform(file[ALL_NUMERIC])
-    except:
-      raise ValueError(f'{colors.RED}A problem occured while scaling values{colors.END}')
-  print(f"{colors.GREEN}SCALING HAS BEEN SUCCESFULLY COMPLETED!{colors.END}")
-  return file
-
-def normalization(file):
-  for item in ALL_NUMERIC:
-    if item not in ALL_NUMERIC:
-      ALL_NUMERIC.remove(item)
-      continue
-  if len(ALL_NUMERIC)!=0:
-    try:
-      columns_to_normalize = file[ALL_NUMERIC]
-      scaler = MinMaxScaler()
-      normalized_columns = pd.DataFrame(scaler.fit_transform(columns_to_normalize), columns=ALL_NUMERIC)
-      file[ALL_NUMERIC] = normalized_columns
-    except:
-      raise ValueError(f'{colors.RED}A problem occured while normalising values{colors.END}')
-  print(f"{colors.GREEN}NORMALISING HAS BEEN SUCCESFULLY COMPLETED!{colors.END}")
-  return file
-
 def columnDataFormating(file):
   try:
     #  Convert each value of the df that is ending with the '%' to decimal (divide by 100)
@@ -286,8 +233,12 @@ def columnDataFormating(file):
     raise RuntimeError(f'{colors.RED}A problem occured while converting precentages to decimal.{colors.END}')
   try:
     file[ALL_NUMERIC] = file[ALL_NUMERIC].replace(',', '', regex=True).apply(pd.to_numeric, errors='coerce')
-    # file['budget ($million)'] = file['budget ($million)'] * 1000000
-    # file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
+    toMillion=['budget ($million)','opening weekend ($million)','foreign gross ($million)','domestic gross ($million)','worldwide gross ($million)']
+    for column in toMillion:
+      if column not in USELESS_COL:
+        file[column]=file[column]*1000000
+    if 'genre' not in USELESS_COL:
+      file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
     # if 'oscar detail' not in USELESS_COL:
     #   file['oscar detail'] = file['oscar detail'].str.split('(', n=1).str[0].str.strip()
   except:
@@ -325,7 +276,7 @@ class DataPreprocessor():
         self.cloneProcessedFile = cloneProcessedFile
 
   # DATA PREPROCESSING
-  def executePreprocess(self,predict=False):
+  def executePreprocess(self,predict=False,corel='nocorel'):
     df=initDataframe(self.fileToProcess)
     # subset = df[['budget ($million)', 'budget recovered', 'budget recovered opening weekend']]
     # # subset = df[['rotten tomatoes critics',	'metacritic critics','average critics']]
@@ -342,35 +293,30 @@ class DataPreprocessor():
     df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
     df.to_excel(self.cloneProcessedFile, index=False)
     print(f"------------------------PRE-PROCESSING-FINISHED-------------------------\n")
-    if predict!=True:
+    if predict!=True and corel=='corel':
       correlation_matrix = df.corr().loc[:, 'oscar winners'].sort_values(ascending=False)
-      # Print or display the correlation matrix
       print("Correlation Matrix:")
       print(correlation_matrix)
-      correlation_matrix.to_excel("correlation_matrix.xlsx", index=True)
-      subprocess.Popen(['start','excel','correlation_matrix.xlsx'],shell=True)
+      # correlation_matrix.to_excel("correlation_matrix.xlsx", index=True)
+      # subprocess.Popen(['start','excel','correlation_matrix.xlsx'],shell=True)
     if df.isna().any().any():
-      print("DataFrame contains NaN values.")
+      print(f"{colors.RED}WARNING: DataFrame contains NaN values.{colors.END}")
     else:
-        print("DataFrame does not contain NaN values.")
+        print(f"{colors.GREEN}DataFrame does not contain NaN values.{colors.END}")
     return df
 
 
 def handleArgvs():
-    if len(sys.argv) != 2:
-        print("Usage: python3 main.py <file_to_process_path> <processed_file_path>")
+    if len(sys.argv) != 4:
+        print("Usage: python3 main.py <file_to_process_path> <processed_file_path> <cor/nocor>")
         sys.exit(1)
     argOne=sys.argv[1]
     argTwo=sys.argv[2]
-    return argOne,argTwo
+    argThree=sys.argv[3]
+    return argOne,argTwo,argThree
 
 if __name__=='__main__':
-  argOne,argTwo=handleArgvs()
+  argOne,argTwo,argThree=handleArgvs()
   dp=DataPreprocessor(argOne,argTwo)
-  dataset=dp.executePreprocess()
-
-  if dataset.isna().any().any():
-    print("DataFrame contains NaN values.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-  else:
-      print("DataFrame does not contain NaN values.")
+  dataset=dp.executePreprocess(corel=argThree)
   print(dataset.head())

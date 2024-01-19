@@ -23,6 +23,16 @@ PREDICTIONS_PATH_XL='./Data/predictions.xlsx'
 PREDICTIONS_PATH_CSV='./Data/predictions.csv'
 FULL_PREDICTIONS='./Data/full_predictions.xlsx'
 
+def handleArgvs():
+    if len(sys.argv) != 5:
+        print("Usage: python3 main.py <rf/knn/lr/dtc> <stats/nostats> <prepro/noprepro> <corel/nocorel>")
+        sys.exit(1)
+    argOne=sys.argv[1]
+    argTwo=sys.argv[2]
+    argThree=sys.argv[3]
+    argFour=sys.argv[4]
+    return argOne,argTwo,argThree,argFour
+
 def seperateData(ds):
   if 'oscar winners' not in ds.columns:
     raise ValueError('Oscar winners not in the dataset')
@@ -53,17 +63,16 @@ def fixTestFile(train_file,test_file):
   # print(train_file.shape,test_file.shape)
   return test_file.sort_index(axis=1)
 
-def preprocess(command='prepro'):
+def preprocess(command='prepro',corel='nocorel'):
     if command=='prepro':
         dp=DataPreprocessor(TRAIN_PATH,TRAIN_PATH_PROCESSED)
         df=DataPreprocessor(PREDICT_PATH,PREDICT_PATH_PROCESSED)
-        trainDataset=dp.executePreprocess()
+        trainDataset=dp.executePreprocess(corel=corel)
         predictDataset=df.executePreprocess(predict=True)#options: predict=True/False
     else:
         # SAVING TIME-------------------
         trainDataset=pd.read_excel(TRAIN_PATH_PROCESSED, sheet_name = 'Sheet1')
         predictDataset=pd.read_excel(PREDICT_PATH_PROCESSED, sheet_name = 'Sheet1')
-    print('all files has been succesfully preprocessed')
     return trainDataset,predictDataset
 
 def printStats(model,y_valid,y_pred,scaledTrainData,trainTarget):
@@ -87,7 +96,6 @@ def featureImportances(model,trainData):
 def scaleData(trainData,predictData):
     scaler=MinMaxScaler()
     scaledTrainData=scaler.fit_transform(trainData)
-
     scaledPredictData=scaler.transform(predictData)
     return scaledTrainData,scaledPredictData
 
@@ -95,38 +103,18 @@ def doPredictions(model,scaledPredictData,predictData):
     predictions = model.predict(scaledPredictData)
     count_ones = np.count_nonzero(predictions == 1.0)
     scaledPredictData=pd.DataFrame(scaledPredictData,columns=predictData.columns)
-    scaledPredictData['predictions'] = predictions
+    scaledPredictData['oscar winners'] = predictions
     scaledPredictData.to_excel(FULL_PREDICTIONS,index=False)
     scaledPredictData['id'] = range(1, len(scaledPredictData) + 1)
-    results=scaledPredictData[['id','predictions']]
+    results=scaledPredictData[['id','oscar winners']]
     results.to_excel(PREDICTIONS_PATH_XL, index=False)
     results.to_csv(PREDICTIONS_PATH_CSV, index=False)
     print("#Oscar winners: ", count_ones)
-    winners_ids = results[results['predictions'] == 1]['id'].tolist()
+    winners_ids = results[results['oscar winners'] == 1]['id'].tolist()
     print("Winner IDs:", winners_ids)
-    # TOREMOVE
-    print("==================")
-    sureWinners=[52,59,101,147,149,308,344,353,400,406,413,466]
-    winners_set = set(winners_ids)
-    sureWinners_set = set(sureWinners)
-
-    # Find common winner IDs
-    common_winners = winners_set.intersection(sureWinners_set)
-
-    # Find winner IDs not in sureWinners
-    winners_not_in_sureWinners = winners_set.difference(sureWinners_set)
-
-    # Print the results
-    print("Number of winner IDs in sureWinners:", len(common_winners))
-    print("Winner IDs in sureWinners:", common_winners)
-    print("Number of winner IDs not in sureWinners:", len(winners_not_in_sureWinners))
-    print("Winner IDs not in sureWinners:", winners_not_in_sureWinners)
-    print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA::::::::  ',len(common_winners))
-    return len(common_winners),count_ones
     # subprocess.Popen(['start','excel','./Data/predictions.xlsx'],shell=True)
 
 def doTraining(scaledTrainData,trainTarget,modelName='knn',rs=42):
-    print("---------------------------------------TRY:",rs)
     X_train, X_valid, y_train, y_valid = train_test_split(scaledTrainData,trainTarget, test_size=0.25,random_state=rs)
     if modelName=='rf':
         model = RandomForestClassifier(random_state=42)
@@ -141,46 +129,19 @@ def doTraining(scaledTrainData,trainTarget,modelName='knn',rs=42):
     model.fit(X_train, y_train)
     return model,X_train,X_valid, y_train, y_valid
 
-def handleArgvs():
-    if len(sys.argv) != 4:
-        print("Usage: python3 main.py <rf/knn/lr/dtc> <stats/nostats> <prepro/noprepro>")
-        sys.exit(1)
-    argOne=sys.argv[1]
-    argTwo=sys.argv[2]
-    argThree=sys.argv[3]
-    return argOne,argTwo,argThree
 
 if __name__=='__main__':
-    argOne,argTwo,argThree=handleArgvs()
+    argOne,argTwo,argThree,argFour=handleArgvs()
 
-    trainDataset,predictDataset=preprocess(argThree)
+    trainDataset,predictDataset=preprocess(argThree,argFour)
     trainTarget,trainData=seperateData(trainDataset) #seperate train from target data of the train dataset
-    predictData=fixTestFile(trainData,predictDataset)
+    predictData=fixTestFile(trainData,predictDataset) #fix the train and Predict dataset to have the same columns
     scaledTrainData,scaledPredictData=scaleData(trainData,predictData)
-    max=0
-    pos=0
-    for i in range(1):
-        model,X_train,X_valid,y_train, y_valid=doTraining(scaledTrainData,trainTarget,argOne,42)
-        y_pred = model.predict(X_valid)
-        if sys.argv[2]=='stats':
-            printStats(model,y_valid,y_pred,scaledTrainData,trainTarget)
+    model,X_train,X_valid,y_train, y_valid=doTraining(scaledTrainData,trainTarget,argOne,42)
+    y_pred = model.predict(X_valid)
+    if sys.argv[2]=='stats':
+        printStats(model,y_valid,y_pred,scaledTrainData,trainTarget)
         if sys.argv[1]!='knn' and sys.argv[1]!='lr':
             featureImportances(model,trainData)
-
-        r,o=doPredictions(model,scaledPredictData,predictData) # Predict in the model
-        fScore=f1_score(y_valid,y_pred)
-        if fScore>=max:
-            max=fScore
-            pos=i
-    print("BEST RANDOM STATE: ",pos,max)#random state 87
-    # df = pd.read_excel(PREDICT_PATH)
-
-    # # Find the row where column F has the value 60 and column AB has the value 7.7
-    # result = df[(df['year'] == 2021)&(df['metacritic critics'] == 72)]
-
-    # # If there are multiple rows meeting the conditions, 'result' will contain all of them.
-    # # If you want just the first row, you can use 'result.iloc[0]'
-    # if not result.empty:
-    #     print("Row found:", result)
-    # else:
-    #     print("No matching row found.")
+    doPredictions(model,scaledPredictData,predictData) # Predict in the model
+    print(f'PREDICTIONS COMPLETED. YOU CAN CHECK the results of the predictions at .\Data\predictions.csv/xlsx')
