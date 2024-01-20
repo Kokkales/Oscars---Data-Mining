@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import MinMaxScaler
 from textblob import Word
 from imdb import IMDb
 import re

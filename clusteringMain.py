@@ -1,16 +1,10 @@
-from clustering import Clustering
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
-from sklearn import metrics
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import silhouette_score
+import sys
+from clustering import Clustering
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import RobustScaler
 from sklearn.preprocessing import MinMaxScaler
-import sys
 
 TRAIN_PATH_PROCESSED = "./Data/moviesUpdated_processed.xlsx"
 FULL_PREDICTIONS = './Data/full_predictions.xlsx'
@@ -36,6 +30,7 @@ def scale(X):
 def loadDataset():
     dataset = pd.read_excel(TRAIN_PATH_PROCESSED, sheet_name='Sheet1')
     y, X = separateData(dataset)
+    print(type(X))
     return y,X,dataset
 
 
@@ -44,8 +39,9 @@ if len(sys.argv) != 4:
     print("Usage: python3 clustering.py <clusterAlgorithm> <clustersNumber> <ss/rs/mm>")
     sys.exit(1)
 y,X,dataSet=loadDataset()
-X=scale(X)
+Xscaled=scale(X)
 
-cl=Clustering(y=y,X=X,dataFrame=dataSet)
+
+cl=Clustering(y=y,X=X,Xscaled=Xscaled,dataFrame=dataSet)
 cl.executeClustering(alg=sys.argv[1],numClusters=int(sys.argv[2]))
 print('FINISHED')
