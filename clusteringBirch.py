@@ -42,16 +42,17 @@ elif sys.argv[2]=='rs':
     scaler=RobustScaler()
 else:
     scaler=MinMaxScaler()
-X_scaled = scaler.fit_transform(X)
+Xscaled = scaler.fit_transform(X)
 
 # Perform PCA on the scaled data
 pca = PCA(n_components=2)
-Xnew = pca.fit_transform(X_scaled)
+Xnew = pca.fit_transform(Xscaled)
 feature_names_pc1 = X.columns[np.argsort(pca.components_[0])[::-1]].tolist()
 
 # Perform Birch clustering on the scaled data
 num_clusters = int(sys.argv[1])  # You can choose the number of clusters
-birch = Birch(n_clusters=num_clusters)
+# birch = Birch(n_clusters=num_clusters)
+birch = Birch()
 birch_labels = birch.fit_predict(Xnew)
 
 # Add cluster labels to your dataframe
@@ -63,6 +64,7 @@ dfall_birch = pd.concat([dfpca, dfclass, dfcluster_birch], axis=1)
 # Print clustering stats
 print("Confusion Matrix:")
 print(confusion_matrix(dfall_birch['oscar winners'], dfall_birch['birch_cluster']))
+print("Calinski-Harabasz Score:", metrics.calinski_harabasz_score(Xnew, dfall_birch['birch_cluster']))
 print("Silhouette Score:", silhouette_score(Xnew, dfall_birch['birch_cluster'], metric='euclidean'))
 
 # Explore cluster characteristics (centroid values) - Birch doesn't have explicit centroids

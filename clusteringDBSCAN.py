@@ -62,6 +62,7 @@ dfall_dbscan = pd.concat([dfpca, dfclass, dfcluster_dbscan], axis=1)
 # Print clustering stats
 print("Confusion Matrix:")
 print(confusion_matrix(dfall_dbscan['oscar winners'], dfall_dbscan['dbscan_cluster']))
+print("Calinski-Harabasz Score:", metrics.calinski_harabasz_score(Xnew, dfall_dbscan['dbscan_cluster']))
 print("Silhouette Score:", silhouette_score(Xnew, dfall_dbscan['dbscan_cluster'], metric='euclidean'))
 
 # Explore cluster characteristics (core sample indices and labels)
