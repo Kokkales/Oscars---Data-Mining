@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+Data/predictions.xlsx
+Data/moviesUpdated_processed.xlsx
+Data/movies_test_anon_processed.xlsx
+Data/full_predictions.xlsx
 # C extensions
 *.so
 

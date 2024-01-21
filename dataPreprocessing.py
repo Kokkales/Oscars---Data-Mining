@@ -1,20 +1,16 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import re
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import MinMaxScaler
 from textblob import Word
 from imdb import IMDb
-import openpyxl
+import re
+import sys
+import subprocess
 
 ALL_NUMERIC=['year', 'rotten tomatoes critics', 'metacritic critics', 'average critics', 'rotten tomatoes audience', 'metacritic audience', 'rotten tomatoes vs metacritic deviance', 'average audience', 'audience vs critics deviance', 'opening weekend', 'opening weekend ($million)', 'domestic gross', 'domestic gross ($million)','foreign gross ($million)', 'foreign gross', 'worldwide gross', 'worldwide gross ($million)', 'budget ($million)','of gross earned abroad', 'budget recovered','budget recovered opening weekend','imdb rating','distributor','imdb vs rt disparity']
 NO_TRAGET_STRINGS=['script type','primary genre','genre','release date (us)'] #except 'film' 'oscar winners','oscar detail'
-TARGET_STRINGS=['oscar winner','oscar detail']
 TYPES=['adaptation','original','based on a true story','sequel','remake']
-USELESS_COL=['id','rotten tomatoes critics','metacritic critics','rotten tomatoes audience','metacritic audience','rotten tomatoes vs metacritic deviance','audience vs critics deviance','primary genre','opening weekend ($million)','domestic gross ($million)','foreign gross ($million)','worldwide gross ($million)','worldwide gross','budget recovered opening weekend','distributor','imdb vs rt disparity']
+# USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','release date (us)']
+USELESS_COL=['id','imdb vs rt disparity','oscar detail','distributor','primary genre','genre','script type','release date (us)','opening weekend','budget recovered','budget ($million)','budget recovered opening weekend','domestic gross ($million)']
 
 class colors:
     RED = '\033[91m'
@@ -32,12 +28,9 @@ def oneHotEncoding(file):
       raise RuntimeError(f'{colors.RED}A problem occured while one-hot encoding script-type{colors.END}')
 
   # OSCAR DETAILS
-  if 'oscar detail' in file.columns and 'oscar detail' not in USELESS_COL:
+  if 'oscar detail' in file.columns:
     try:
       file['oscar detail'] = file['oscar detail'].apply(lambda x: re.sub(r'\([^)]*\)', '', str(x)))
-
-      # # Save the modified DataFrame back to Excel
-      # file.to_excel('modified_file.xlsx', index=False)
       one_hot_encoded = file['oscar detail'].str.get_dummies(', ').astype(int)
       file = pd.concat([file, one_hot_encoded], axis=1)
       file=dropUseless(file,['oscar detail'])
@@ -52,12 +45,9 @@ def oneHotEncoding(file):
       correctGenre=[]
       for item in file['genre']:
         for word in item.split():
-          # correctedWords=[]
           correctedWord=str(Word(word).correct().lower())
-          # print(correctedWord)
           correctGenre.append(correctedWord)
       genres.update(correctGenre)
-      # print("c:",genres)
       words_to_remove = set()
       for word1 in genres:
             for word2 in genres:
@@ -67,11 +57,9 @@ def oneHotEncoding(file):
                         shorter_word = word1 if len(word1) < len(word2) else word2
                         words_to_remove.add(shorter_word)
       genres.difference_update(words_to_remove)
-      # print(genres)
       file['genre'] = file['genre'].apply(lambda cell: ' '.join(
         [next((word_set_word for word_set_word in genres if word_set_word[:3] == word[:3]), word) for word in cell.split()]
     ))
-      # print('Set:::',genres)
       for genre in genres:
           file[genre] = file['genre'].apply(lambda x: 1 if genre in x.split() else 0)
       file=dropUseless(file,['genre'])
@@ -81,28 +69,24 @@ def oneHotEncoding(file):
   # DATE
   if 'release date (us)' in file.columns:
     try:
+      file['release date (us)'] = file['release date (us)'].replace(r'\([^)]*\)', '', regex=True)
+      file['release date (us)'] = file['release date (us)'].str.extract(r'(\b\w{3}\s\d{1,2},\s\d{4}\b)')
       file['release date (us)'] = pd.to_datetime(file['release date (us)'],format='mixed')
-      # Extract month and day
-      file['release date (us)'] = file['release date (us)'].dt.strftime('%m').astype(int)
-      monthMapping = {
-        1: 'january',
-        2: 'february',
-        3: 'march',
-        4: 'april',
-        5: 'may',
-        6: 'june',
-        7: 'july',
-        8: 'august',
-        9: 'september',
-        10: 'october',
-        11: 'november',
-        12: 'december'
-    }
 
-      # Nominalize the 'release date (us)' column
-      file['release date (us)'] = file['release date (us)'].map(monthMapping)
-      one_hot_encoded = pd.get_dummies(file['release date (us)'], prefix='').astype(int)
+      def get_season(month):
+        if month in [12, 1, 2]:
+            return 'winter'
+        elif month in [3, 4, 5]:
+            return 'spring'
+        elif month in [6, 7, 8]:
+            return 'summer'
+        else:
+            return 'fall'
+
+      file['season'] = file['release date (us)'].apply(lambda x: get_season(x))
+      one_hot_encoded = pd.get_dummies(file['season'], prefix='').astype(int)
       file = pd.concat([file, one_hot_encoded], axis=1)
+      file = file.drop(['season'], axis=1)
       file=dropUseless(file,['release date (us)'])
     except:
       raise RuntimeError(f'{colors.RED}A problem occured while one-hot encoding dates{colors.END}')
@@ -112,6 +96,7 @@ def oneHotEncoding(file):
   return file
 
 def dropUseless(file,uselessColumns):
+  # print(file.columns)
   try:
     for item in uselessColumns:
       if item not in file.columns:
@@ -124,15 +109,13 @@ def dropUseless(file,uselessColumns):
   print(f"{colors.GREEN}USELESS COLUMNS HAS BEEN SUCCESFULLY DELETED!{colors.END}")
   return file
 
-def deleteDuplicate(file,dropNames):
+def deleteDuplicate(file):
   try:
     if (file.duplicated().sum() != 0) or (not file[file.duplicated(subset=['film'])].empty):
-      print(f'The dataset contains {(file.duplicated(subset=["film"])).sum()} duplicate films that need to be removed.')
-      print(f'The dataset contains {file.duplicated().sum()} duplicate rows that need to be removed.')
-      # Exclude rows where 'film' contains '??'
+      # print(f'The dataset contains {(file.duplicated(subset=["film"])).sum()} duplicate films that need to be removed.')
+      # print(f'The dataset contains {file.duplicated().sum()} duplicate rows that need to be removed.')
       file.drop_duplicates(inplace=True)
-      if dropNames==True:
-        file = file.drop_duplicates(subset=['film'],keep='first')
+      file = file.drop_duplicates(subset=['film'],keep='first')
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while deleting duplicates{colors.END}')
   print(f"{colors.GREEN}DUPLICATE ROWS HAVE BEEN SUCCESFULLY DELETED!{colors.END}")
@@ -171,7 +154,7 @@ def externalGenre(file):
   ia=IMDb()
   try:
     for index,row in file.iterrows():
-      if pd.isna(row['genre']):
+      if pd.isna(row['genre']) and 'genre' not in USELESS_COL:
         movies = ia.search_movie(row['film'])
         if movies:
             movie = ia.get_movie(movies[0].movieID)
@@ -195,13 +178,14 @@ def stringMissingValues(file):
       if len(ALL_NUMERIC)==0:
         print(f'{colors.GREEN}NO STRING COLUMNS TO BE PROCESSED.SUCCESFULLY COMPLETED{colors.END}')
         return file
-    file=externalGenre(file)
-    for index, row in file.iterrows():
-        if 'oscar winners' in file.columns:
-          if (pd.isna(row['oscar winners'])):
-            file.loc[index, 'oscar winners'] = 0
-          else:
-            file.loc[index, 'oscar winners'] = 1
+    # file=externalGenre(file)
+    if 'oscar winners' in file.columns:
+      for index, row in file.iterrows():
+        if (pd.isna(row['oscar winners'])):
+          file.loc[index, 'oscar winners'] = 0
+        else:
+          file.loc[index, 'oscar winners'] = 1
+      file['oscar winners']=pd.to_numeric(file['oscar winners'], errors='coerce')
     for j in NO_TRAGET_STRINGS:
       if file[j].isnull().any():
         file[j]=file[j].ffill()
@@ -239,37 +223,6 @@ def numericMissingValues(file): # replacing ',' and missing values with the mean
   print(f"{colors.GREEN}NUMERIC MISSING VALUES HAS BEEN SUCCESFULLY RESTORED!{colors.END}")
   return file
 
-
-def scaling(file):
-  for item in ALL_NUMERIC:
-    if item not in ALL_NUMERIC:
-      ALL_NUMERIC.remove(item)
-      continue
-  if len(ALL_NUMERIC)!=0:
-    try:
-      scaler = StandardScaler()
-      file[ALL_NUMERIC] = scaler.fit_transform(file[ALL_NUMERIC])
-    except:
-      raise ValueError(f'{colors.RED}A problem occured while scaling values{colors.END}')
-  print(f"{colors.GREEN}SCALING HAS BEEN SUCCESFULLY COMPLETED!{colors.END}")
-  return file
-
-def normalization(file):
-  for item in ALL_NUMERIC:
-    if item not in ALL_NUMERIC:
-      ALL_NUMERIC.remove(item)
-      continue
-  if len(ALL_NUMERIC)!=0:
-    try:
-      columns_to_normalize = file[ALL_NUMERIC]
-      scaler = MinMaxScaler()
-      normalized_columns = pd.DataFrame(scaler.fit_transform(columns_to_normalize), columns=ALL_NUMERIC)
-      file[ALL_NUMERIC] = normalized_columns
-    except:
-      raise ValueError(f'{colors.RED}A problem occured while normalising values{colors.END}')
-  print(f"{colors.GREEN}NORMALISING HAS BEEN SUCCESFULLY COMPLETED!{colors.END}")
-  return file
-
 def columnDataFormating(file):
   try:
     #  Convert each value of the df that is ending with the '%' to decimal (divide by 100)
@@ -278,12 +231,14 @@ def columnDataFormating(file):
     raise RuntimeError(f'{colors.RED}A problem occured while converting precentages to decimal.{colors.END}')
   try:
     file[ALL_NUMERIC] = file[ALL_NUMERIC].replace(',', '', regex=True).apply(pd.to_numeric, errors='coerce')
-    file['budget ($million)'] = file['budget ($million)'] * 1000000
-    # file[NO_TRAGET_STRINGS] = file[NO_TRAGET_STRINGS].replace(',', '', regex=True)
-    file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
-    # file['oscar detail'] = file['oscar detail'].str.extract(r'([^\(]+)')
+    toMillion=['budget ($million)','opening weekend ($million)','foreign gross ($million)','domestic gross ($million)','worldwide gross ($million)']
+    for column in toMillion:
+      if column not in USELESS_COL:
+        file[column]=file[column]*1000000
+    if 'genre' not in USELESS_COL:
+      file['genre'] = file['genre'].str.replace(',', ' ').str.replace('.', ' ').str.replace('\s+', ' ', regex=True).str.strip()
     # if 'oscar detail' not in USELESS_COL:
-      # file['oscar detail'] = file['oscar detail'].str.split('(', n=1).str[0].str.strip()
+    #   file['oscar detail'] = file['oscar detail'].str.split('(', n=1).str[0].str.strip()
   except:
     raise RuntimeError(f'{colors.RED}A problem occured while replacing charachters.{colors.END}')
   print(f"{colors.GREEN}ALL COLUMNS HAS BEEN SUCCESFULLY FORMATED!{colors.END}")
@@ -319,40 +274,47 @@ class DataPreprocessor():
         self.cloneProcessedFile = cloneProcessedFile
 
   # DATA PREPROCESSING
-  def executePreprocess(self,type=None,deleteDuplicateNames=True):
+  def executePreprocess(self,predict=False,corel='nocorel'):
     df=initDataframe(self.fileToProcess)
     # subset = df[['budget ($million)', 'budget recovered', 'budget recovered opening weekend']]
     # # subset = df[['rotten tomatoes critics',	'metacritic critics','average critics']]
     # # subset = df[['rotten tomatoes audience','metacritic audience','average audience']]
     # getCorrelation(subset)
-    df=dropUseless(df,USELESS_COL) # DELETE USELESS COLUMNS
     df=columnDataFormating(df)
+    df=dropUseless(df,USELESS_COL) # DELETE USELESS COLUMNS
     df=numericMissingValues(df) # RETRIEVE MISSING VALUES
     df=stringMissingValues(df) # RETRIEVE MISSING VALUES
     df=columnDataFormating(df)
     df=oneHotEncoding(df) # ONE HOT ENCODING
-    df=deleteDuplicate(df,deleteDuplicateNames)  # CHECK FOR DUPLICATE ROWS
+    if predict!=True:
+      df=deleteDuplicate(df)  # CHECK FOR DUPLICATE ROWS
     df=dropUseless(df,['film','year']) # DELETE USELESS COLUMNS
-    if type=='normalization':
-      df=normalization(df)
-    elif type=='scaling':
-      df=scaling(df)
-    df.to_excel(self.cloneProcessedFile)
-    missing_data = pd.read_excel(self.cloneProcessedFile).isnull().sum()
-    # print(f"# of missing data: {missing_data}")
-    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    #   print(f"# of missing data:\n{missing_data}")
-    # print(df.describe().T)
+    df.to_excel(self.cloneProcessedFile, index=False)
     print(f"------------------------PRE-PROCESSING-FINISHED-------------------------\n")
+    if predict!=True and corel=='corel':
+      correlation_matrix = df.corr().loc[:, 'oscar winners'].sort_values(ascending=False)
+      print("Correlation Matrix:")
+      print(correlation_matrix)
+      # correlation_matrix.to_excel("correlation_matrix.xlsx", index=True)
+      # subprocess.Popen(['start','excel','correlation_matrix.xlsx'],shell=True)
+    if df.isna().any().any():
+      print(f"{colors.RED}WARNING: DataFrame contains NaN values.{colors.END}")
+    else:
+        print(f"{colors.GREEN}DataFrame does not contain NaN values.{colors.END}")
     return df
 
+
+def handleArgvs():
+    if len(sys.argv) != 4:
+        print("Usage: python3 main.py <file_to_process_path> <processed_file_path> <corel/nocorel>")
+        sys.exit(1)
+    argOne=sys.argv[1]
+    argTwo=sys.argv[2]
+    argThree=sys.argv[3]
+    return argOne,argTwo,argThree
+
 if __name__=='__main__':
-  # dp=DataPreprocessor("./movies_test _anon_sample.xlsx","sample.xlsx")
-  dp=DataPreprocessor("Book.xlsx","final.xlsx")
-  dataset=dp.executePreprocess()
-  if dataset.isna().any().any():
-    print("DataFrame contains NaN values.")
-  else:
-      print("DataFrame does not contain NaN values.")
+  argOne,argTwo,argThree=handleArgvs()
+  dp=DataPreprocessor(argOne,argTwo)
+  dataset=dp.executePreprocess(corel=argThree)
   print(dataset.head())
-  # print(dataset.columns)
