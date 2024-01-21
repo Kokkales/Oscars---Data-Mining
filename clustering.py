@@ -107,11 +107,11 @@ class Clustering:
         else:
             centroids = clusteringAlgorithm.cluster_centers_
 
-        for i in range(numClusters):
-            print(f"Cluster {i + 1} Centroid Values:")
-            print("PC1:", centroids[i, 0])
-            print("PC2:", centroids[i, 1])
-            print()
+        # for i in range(numClusters):
+        #     print(f"Cluster {i + 1} Centroid Values:")
+        #     print("PC1:", centroids[i, 0])
+        #     print("PC2:", centroids[i, 1])
+        #     print()
 
         featureImportancePC1 = pca.components_[0]
         featureImportancePC2 = pca.components_[1]
@@ -154,10 +154,9 @@ class Clustering:
         # Perform PCA on the scaled data
         pca = PCA(n_components=2)
         Xnew = pca.fit_transform(self.Xscaled)
-        print("PCA Components:")
-        print(pca.components_)
+        # print("PCA Components:")
+        # print(pca.components_)
         y=pd.DataFrame(self.y)
-        print('EXECUTING: ')
         if alg=='KM':
             clusteringAlgorithm = KMeans(n_clusters=numClusters, n_init='auto', random_state=42)
             print('KMeans')

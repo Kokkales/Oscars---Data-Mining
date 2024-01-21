@@ -40,8 +40,6 @@ if len(sys.argv) != 4:
     sys.exit(1)
 y,X,dataSet=loadDataset()
 Xscaled=scale(X)
-
-
 cl=Clustering(y=y,X=X,Xscaled=Xscaled,dataFrame=dataSet)
 cl.executeClustering(alg=sys.argv[1],numClusters=int(sys.argv[2]))
 print('FINISHED')

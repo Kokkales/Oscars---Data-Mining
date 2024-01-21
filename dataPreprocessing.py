@@ -306,7 +306,7 @@ class DataPreprocessor():
 
 def handleArgvs():
     if len(sys.argv) != 4:
-        print("Usage: python3 main.py <file_to_process_path> <processed_file_path> <cor/nocor>")
+        print("Usage: python3 main.py <file_to_process_path> <processed_file_path> <corel/nocorel>")
         sys.exit(1)
     argOne=sys.argv[1]
     argTwo=sys.argv[2]
