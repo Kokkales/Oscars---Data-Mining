@@ -25,7 +25,7 @@ FULL_PREDICTIONS='./Data/full_predictions.xlsx'
 
 def handleArgvs():
     if len(sys.argv) != 5:
-        print("Usage: python3 main.py <rf/knn/lr/dtc> <stats/nostats> <prepro/noprepro> <corel/nocorel>")
+        print("Usage: python3 main.py <rf/knn/lr/dtc/gb> <stats/nostats> <prepro/noprepro> <corel/nocorel>")
         sys.exit(1)
     argOne=sys.argv[1]
     argTwo=sys.argv[2]
