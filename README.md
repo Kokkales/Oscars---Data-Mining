@@ -7,14 +7,13 @@
 <p>1. Virtual Environment</p>
 
 ```
-pip install virtualenv  python3 -m venv venv
+# On macOS/Linux:
+python3 -m venv .venv
+. .venv/bin/activate
 
-# Activate the virtual environment 
-# On Windows: 
-venv\Scripts\activate 
-
-# On macOS/Linux: 
-source venv/bin/activate
+# On Windows:
+py -3 -m venv .venv
+.venv\Scripts\activate
 ```
 
 <p>2. Installing Required Packages</p>
@@ -59,14 +58,12 @@ python3 main.py gb stats prepro corel
 python3 clusteringMain.py HAC 2 mm
 ```
 
-  
-  
 <h2>💻 Built with</h2>
 
 Technologies used in the project:
 
-*   Python
-*   Scikit-learn
-*   Pandas
-*   Numpy
-*   Matplotlib
+- Python
+- Scikit-learn
+- Pandas
+- Numpy
+- Matplotlib
