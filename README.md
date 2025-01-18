@@ -1,4 +1,4 @@
-<h1 align="center" id="title">Data Mining Assignment</h1>
+<h1 align="center" id="title">Data Mining</h1>
 
 <p id="description">The goal of the project is to predict movies that will win an oscar using classification methods.</p>
 
